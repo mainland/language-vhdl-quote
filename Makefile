@@ -7,55 +7,39 @@ ARCH=$(shell uname -m)
 #
 # Programs and default flags
 #
-GHC=ghc
-GHCFLAGS+=-Wall
+GHC=stack ghc --
+GHCFLAGS+=-O2 -Wall
 
-RUNGHC=runghc
+RUNGHC=stack runghc --
 RUNGHCFLAGS+=-Wall -fno-warn-unused-imports
 
-HAPPY=happy 
+HAPPY=stack exec happy --
 HAPPYFLAGS=-agci
 
-ALEX=alex 
+ALEX=stack exec alex --
 ALEXFLAGS=-gi
 
 #
-# Support cabal sandbox and stack package databases. We prefer stack.
+# Use stack package databases.
 #
-STACK_LTS=lts-9.17/8.0.2
-STACK_PKGDB=$(HOME)/.stack/snapshots/$(ARCH)-$(OS)/$(STACK_LTS)/pkgdb
-
-ifneq ($(wildcard $(STACK_PKGDB)/*.conf),)
-CABAL_MACROS=$(wildcard .stack-work/dist/$(ARCH)-$(OS)/Cabal-*/build/autogen/cabal_macros.h)
+STACK_PKGDB=$(shell stack path --snapshot-pkg-db)
+STACK_LOCAL_PKGDB=$(shell stack path --local-pkg-db)
 
 GHCFLAGS += \
 	-clear-package-db \
 	-global-package-db \
-	-package-db=$(STACK_PKGDB)
+	-package-db=$(STACK_PKGDB) \
+	-package-db=$(STACK_LOCAL_PKGDB)
 
 RUNGHCFLAGS += \
 	-clear-package-db \
 	-global-package-db \
 	-package-db --ghc-arg=$(STACK_PKGDB)
-else ifneq ($(wildcard .cabal-sandbox/*-packages.conf.d),)
-CABAL_MACROS=dist/build/autogen/cabal_macros.h
-
-GHCFLAGS += \
-	-no-user-package-db \
-	-package-db $(wildcard .cabal-sandbox/*-packages.conf.d)
-
-RUNGHCFLAGS += \
-	-no-user-package-db \
-	-package-db --ghc-arg=$(wildcard .cabal-sandbox/*-packages.conf.d)
-endif
 
 #
-# Support Cabal's MIN_VERSION
+# GHC flags
 #
-#RUNGHCFLAGS += -optP-include -optPdist/build/autogen/cabal_macros.h
-#GHCFLAGS += -optP-include -optPdist/build/autogen/cabal_macros.h
-
-GHC_PACKAGES += \
+GHCPACKAGES += \
 	-hide-all-packages \
 	-package array \
 	-package base \
@@ -83,7 +67,7 @@ GHC_PACKAGES += \
 	-package HUnit \
 	-package QuickCheck
 
-GHCFLAGS+=$(GHC_PACKAGES)
+GHCFLAGS+=$(GHCPACKAGES)
 
 SOURCE = \
 	Language/VHDL/Parser.hs \
@@ -106,7 +90,6 @@ SRC = \
 	$(patsubst %,$(SRCDIR)%,$(GENERATED_INSTANCES)) \
 	$(patsubst %,$(SRCDIR)%,$(GENERATED_PARSER))
 
-
 .PHONY : all
 all : $(SRC)
 
@@ -115,12 +98,19 @@ clean :
 	rm -rf obj
 	rm -f $(patsubst %,$(SRCDIR)%,$(GENERATED_PARSER))
 	rm -f $(patsubst %.hs,$(SRCDIR)%.info,$(GENERATED_PARSER))
+	rm -f unit vhdl
 
 #
 # cabal_macros.h
 #
 dist/build/autogen/cabal_macros.h :
 	cabal build
+
+#
+# Generated instances
+#
+Language/VHDL/Syntax-instances.hs : bin/gen-instances.hs bin/Derive.hs
+	$(RUNGHC) $(RUNGHCFLAGS) -ibin -DONLY_TYPEDEFS $< > $@ || rm -f $@
 
 #
 # Lexer and parser generation
@@ -130,12 +120,6 @@ $(SRCDIR)%.hs : $(SRCDIR)%.y
 
 $(SRCDIR)%.hs : $(SRCDIR)%.x
 	$(ALEX) $(ALEXFLAGS) -o $@ $<
-
-#
-# Generated instances
-#
-Language/VHDL/Syntax-instances.hs : bin/gen-instances.hs bin/Derive.hs
-	$(RUNGHC) $(RUNGHCFLAGS) -ibin -DONLY_TYPEDEFS $< > $@ || rm -f $@
 
 #
 # Tests

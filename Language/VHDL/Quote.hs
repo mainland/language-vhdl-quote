@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module      : Language.VHDL.Quote
--- Copyright   : (c) 2016-2017 Drexel University
+-- Copyright   : (c) 2016-2019 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -48,13 +48,6 @@ import Language.VHDL.Parser
 import qualified Language.VHDL.Parser.Parser as P
 import qualified Language.VHDL.Syntax as V
 
-defaultNamespace :: Map V.Name V.NameSpace
-defaultNamespace = Map.fromList
-  [ ("Word", V.TypeN)
-  , ("Bit", V.TypeN)
-  , ("Natural", V.TypeN)
-  ]
-
 -- | An instance of 'ToExp' can be converted to a 'V.Exp'.
 class ToExp a where
     toExp :: a -> SrcLoc -> V.Exp
@@ -62,38 +55,51 @@ class ToExp a where
 instance ToExp V.Exp where
     toExp e _ = e
 
+qq :: Data a => P a -> QuasiQuoter
+qq = quasiquote defaultExtensions defaultNamespace
+  where
+    defaultExtensions :: [V.Extension]
+    defaultExtensions = []
+
+    defaultNamespace :: Map V.Name V.NameSpace
+    defaultNamespace = Map.fromList
+      [ ("Word", V.TypeN)
+      , ("Bit", V.TypeN)
+      , ("Natural", V.TypeN)
+      ]
+
 vtype :: QuasiQuoter
-vtype = quasiquote exts defaultNamespace P.parseType
+vtype = qq P.parseType
 
 vlit :: QuasiQuoter
-vlit = quasiquote exts defaultNamespace P.parseLit
+vlit = qq P.parseLit
 
 vexp :: QuasiQuoter
-vexp = quasiquote exts defaultNamespace P.parseExp
+vexp = qq P.parseExp
 
 vstm :: QuasiQuoter
-vstm = quasiquote exts defaultNamespace P.parseStm
+vstm = qq P.parseStm
 
 vcstm :: QuasiQuoter
-vcstm = quasiquote exts defaultNamespace P.parseCStm
+vcstm = qq P.parseCStm
 
 vdecl :: QuasiQuoter
-vdecl = quasiquote exts defaultNamespace P.parseDecl
+vdecl = qq P.parseDecl
 
 videcl :: QuasiQuoter
-videcl = quasiquote exts defaultNamespace P.parseIDecl
+videcl = qq P.parseIDecl
 
 vfile :: QuasiQuoter
-vfile = quasiquote exts defaultNamespace P.parseDesignFile
+vfile = qq P.parseDesignFile
 
 quasiquote :: Data a
            => [V.Extension]
            -> Map V.Name V.NameSpace
            -> P a
            -> QuasiQuoter
-quasiquote exts ns p =
-    QuasiQuoter { quoteExp  = qqparse exts ns p >=> dataToExpQ qqExp
-                , quotePat  = qqparse exts ns p >=> dataToPatQ qqPat
+quasiquote exts0 ns0 p0 =
+    QuasiQuoter { quoteExp  = qqparse exts0 ns0 p0 >=> dataToExpQ qqExp
+                , quotePat  = qqparse exts0 ns0 p0 >=> dataToPatQ qqPat
                 , quoteType = fail "VHDL type quasiquoter undefined"
                 , quoteDec  = fail "VHDL declaration quasiquoter undefined"
                 }
@@ -120,9 +126,6 @@ qqExp = const Nothing `extQ` qqExpE
 
 qqPat :: Typeable a => a -> Maybe PatQ
 qqPat = const Nothing `extQ` qqExpP
-
-exts :: [V.Extension]
-exts = []
 
 antiExpQ :: String -> ExpQ
 antiExpQ = either fail return . parseExp

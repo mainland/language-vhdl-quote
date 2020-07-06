@@ -3,7 +3,7 @@ version:       0.1
 cabal-version: >= 1.10
 license:       BSD3
 license-file:  LICENSE
-copyright:     (c) 2016-2017 Drexel University
+copyright:     (c) 2016-2020 Drexel University
 author:        Geoffrey Mainland <mainland@drexel.edu>
 maintainer:    Geoffrey Mainland <mainland@drexel.edu>
 stability:     alpha
@@ -11,7 +11,7 @@ homepage:      https://github.com/mainland/language-vhdl-quote
 bug-reports:   https://github.com/mainland/language-vhdl-quote/issues
 category:      Language
 synopsis:      VHDL quasiquoting library.
-tested-with:   GHC==8.0.2
+tested-with:   GHC==8.0.2, GHC==8.6.5
 
 description:
   This package provides a general parser and quasiquoter for the VHDL language.
@@ -35,11 +35,11 @@ library
     array                  >= 0.2   && < 0.6,
     base                   >= 4.5   && < 5,
     bytestring             >= 0.9   && < 0.11,
-    containers             >= 0.4   && < 0.6,
+    containers             >= 0.4   && < 0.7,
     exception-mtl          >= 0.3   && < 0.5,
     exception-transformers >= 0.3   && < 0.5,
     filepath               >= 1.2   && < 1.5,
-    mainland-pretty        >= 0.6   && < 0.7,
+    mainland-pretty        >= 0.6   && < 0.8,
     mtl                    >= 2.0   && < 3,
     srcloc                 >= 0.4   && < 0.6,
     syb                    >= 0.3   && < 0.8,
@@ -51,7 +51,7 @@ library
     build-depends: haskell-src-meta >= 0.4 && < 0.9
   else
     build-depends: haskell-exp-parser >= 0.1 && < 0.2
-    
+
   build-tools:
     alex >=3,
     happy
@@ -86,7 +86,7 @@ test-suite unit
     base                 >= 4   && < 5,
     bytestring           >= 0.9 && < 0.11,
     language-vhdl-quote,
-    mainland-pretty      >= 0.6 && < 0.7,
+    mainland-pretty      >= 0.6 && < 0.8,
     srcloc               >= 0.4 && < 0.6,
     symbol               >= 0.1 && < 0.3,
     test-framework       >= 0.8 && < 0.9,

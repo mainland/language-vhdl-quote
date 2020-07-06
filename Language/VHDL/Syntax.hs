@@ -7,7 +7,7 @@
 
 -- |
 -- Module      : Language.VHDL.Syntax
--- Copyright   : (c) 2016-2017 Drexel University
+-- Copyright   : (c) 2016-2019 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -2516,8 +2516,8 @@ instance Pretty CStm where
         text "end block"
       where
         pprCond :: Maybe Cond -> Doc
-        pprCond Nothing     = empty
-        pprCond (Just cond) = parens (ppr cond)
+        pprCond Nothing      = empty
+        pprCond (Just cond') = parens (ppr cond')
 
     ppr (ProcessS isPostponed sense decls stms _) =
         nest 2 (postponed <+> text "process" <+>
