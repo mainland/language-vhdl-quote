@@ -100,8 +100,8 @@ quasiquote :: Data a
 quasiquote exts0 ns0 p0 =
     QuasiQuoter { quoteExp  = qqparse exts0 ns0 p0 >=> dataToExpQ qqExp
                 , quotePat  = qqparse exts0 ns0 p0 >=> dataToPatQ qqPat
-                , quoteType = fail "VHDL type quasiquoter undefined"
-                , quoteDec  = fail "VHDL declaration quasiquoter undefined"
+                , quoteType = error "VHDL type quasiquoter undefined"
+                , quoteDec  = error "VHDL declaration quasiquoter undefined"
                 }
   where
     qqparse :: [V.Extension]

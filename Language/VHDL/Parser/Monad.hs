@@ -64,6 +64,9 @@ module Language.VHDL.Parser.Monad (
     expectedAt,
   ) where
 
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative (Applicative(..))
+#endif /* !MIN_VERSION_base(4,8,0) */
 import Control.Monad.Exception
 import Control.Monad.State
 import Data.Bits ((.&.),
@@ -127,22 +130,21 @@ instance Functor P where
     fmap f x = x >>= return . f
 
 instance Applicative P where
-    pure  = return
+    pure a = P $ \s -> Right (a, s)
+
     (<*>) = ap
 
 instance Monad P where
+    return = pure
+
     m >>= k = P $ \s ->
         case runP m s of
           Left e         -> Left e
           Right (a, s')  -> runP (k a) s'
 
-    m1 >> m2 = P $ \s ->
-        case runP m1 s of
-          Left e         -> Left e
-          Right (_, s')  -> runP m2 s'
-
-    return a = P $ \s -> Right (a, s)
-
+#if MIN_VERSION_base(4,13,0)
+instance MonadFail P where
+#endif
     fail msg = do
         inp <- getInput
         throw $ ParserException (alexLoc inp inp) (text msg)
