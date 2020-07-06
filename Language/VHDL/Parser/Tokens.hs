@@ -1,6 +1,8 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      : Language.VHDL.Parser.Tokens
--- Copyright   : (c) 2016 Drexel University
+-- Copyright   : (c) 2016-2020 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -9,6 +11,12 @@ module Language.VHDL.Parser.Tokens (
     Token(..)
   ) where
 
+#if !(MIN_VERSION_base(4,9,0))
+import Data.Monoid (Monoid(..), (<>))
+#endif /* !(MIN_VERSION_base(4,9,0)) */
+#if MIN_VERSION_base(4,9,0) && !(MIN_VERSION_base(4,11,0))
+import Data.Semigroup (Semigroup(..))
+#endif
 import Data.Symbol
 import Text.PrettyPrint.Mainland
 import Text.PrettyPrint.Mainland.Class

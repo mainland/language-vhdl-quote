@@ -1,11 +1,12 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+
 -- |
 -- Module      : Language.VHDL.Parser.Exceptions
--- Copyright   : (c) 2014-2016 Drexel University
+-- Copyright   : (c) 2014-2020 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
-
-{-# LANGUAGE DeriveDataTypeable #-}
 
 module Language.VHDL.Parser.Exceptions (
     LexerException(..),
@@ -14,6 +15,12 @@ module Language.VHDL.Parser.Exceptions (
 
 import Control.Monad.Exception
 import Data.Loc
+#if !(MIN_VERSION_base(4,9,0))
+import Data.Monoid (Monoid(..), (<>))
+#endif /* !(MIN_VERSION_base(4,9,0)) */
+#if MIN_VERSION_base(4,9,0) && !(MIN_VERSION_base(4,11,0))
+import Data.Semigroup (Semigroup(..))
+#endif
 import Data.Typeable (Typeable)
 import Text.PrettyPrint.Mainland
 import Text.PrettyPrint.Mainland.Class

@@ -1,6 +1,7 @@
 -- -*- mode: haskell -*-
 
 {
+{-# LANGUAGE CPP #-}
 {-# OPTIONS -w #-}
 
 -- |
@@ -19,7 +20,13 @@ import Data.List (foldl1',
                   intersperse)
 import Data.Loc
 import Data.Maybe (fromMaybe, catMaybes)
+#if !(MIN_VERSION_base(4,9,0))
+import Data.Monoid (Monoid(..), (<>))
+#endif /* !(MIN_VERSION_base(4,9,0)) */
 import Data.Ratio
+#if MIN_VERSION_base(4,9,0) && !(MIN_VERSION_base(4,11,0))
+import Data.Semigroup (Semigroup(..))
+#endif
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Symbol

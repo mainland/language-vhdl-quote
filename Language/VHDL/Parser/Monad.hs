@@ -1,14 +1,14 @@
--- |
--- Module      : Language.VHDL.Parser.Monad
--- Copyright   : (c) 2014-2016 Drexel University
--- License     : BSD-style
--- Author      : Geoffrey Mainland <mainland@drexel.edu>
--- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
-
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+
+-- |
+-- Module      : Language.VHDL.Parser.Monad
+-- Copyright   : (c) 2014-2020 Drexel University
+-- License     : BSD-style
+-- Author      : Geoffrey Mainland <mainland@drexel.edu>
+-- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
 
 module Language.VHDL.Parser.Monad (
     P,
@@ -75,6 +75,12 @@ import Data.Loc
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
+#if !(MIN_VERSION_base(4,9,0))
+import Data.Monoid (Monoid(..), (<>))
+#endif /* !(MIN_VERSION_base(4,9,0)) */
+#if MIN_VERSION_base(4,9,0) && !(MIN_VERSION_base(4,11,0))
+import Data.Semigroup (Semigroup(..))
+#endif
 import qualified Data.Text.Lazy as T
 import Data.Word (Word32)
 import Text.PrettyPrint.Mainland

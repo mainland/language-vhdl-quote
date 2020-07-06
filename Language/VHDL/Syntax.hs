@@ -7,7 +7,7 @@
 
 -- |
 -- Module      : Language.VHDL.Syntax
--- Copyright   : (c) 2016-2019 Drexel University
+-- Copyright   : (c) 2016-2020 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -20,6 +20,12 @@ import Data.Loc (Located(..),
                  SrcLoc,
                  noLoc,
                  srclocOf)
+#if !(MIN_VERSION_base(4,9,0))
+import Data.Monoid (Monoid(..), (<>))
+#endif /* !(MIN_VERSION_base(4,9,0)) */
+#if MIN_VERSION_base(4,9,0) && !(MIN_VERSION_base(4,11,0))
+import Data.Semigroup (Semigroup(..))
+#endif
 import Data.String
 import Data.Symbol
 import Data.Typeable (Typeable)
