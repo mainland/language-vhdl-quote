@@ -134,6 +134,9 @@ vhdl : tests/vhdl/Main.hs $(SRC)
 	@mkdir -p obj
 	$(GHC) $(GHCFLAGS) --make $< -odir obj -hidir obj $(TESTFLAGS) -o $@
 
+.travis.yml : language-vhdl-quote.cabal
+	haskell-ci $< --output $@
+
 #
 # Print Makefile variables
 #
