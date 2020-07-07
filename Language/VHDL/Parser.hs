@@ -10,6 +10,9 @@
 
 module Language.VHDL.Parser (
     P,
+    emptyPState,
+    evalP,
+
     parse,
     parseDesignFile,
     parseDesignFileFromFile
@@ -36,18 +39,27 @@ parse :: [Extension]
 parse exts ns p buf pos =
     evalP p (emptyPState exts ns buf pos)
 
-parseFromFile :: P a
+parseFromFile :: [Extension]
+              -> Map Name NameSpace
+              -> P a
               -> FilePath
               -> IO a
-parseFromFile p path = do
+parseFromFile exts ns p path = do
     text <- liftIO $ B.readFile path
-    liftException (parse [] mempty p (E.decodeLatin1 text) (Just start))
+    liftException (parse exts ns p (E.decodeLatin1 text) (Just start))
   where
     start :: Pos
     start = startPos path
 
-parseDesignFile :: T.Text -> Pos -> IO [DesignUnit]
-parseDesignFile buf pos = liftException $ parse [] mempty P.parseDesignFile buf (Just pos)
+parseDesignFile :: [Extension]
+                -> Map Name NameSpace
+                -> T.Text
+                -> Pos
+                -> IO [DesignUnit]
+parseDesignFile exts ns buf pos = liftException $ parse exts ns P.parseDesignFile buf (Just pos)
 
-parseDesignFileFromFile :: FilePath -> IO [DesignUnit]
-parseDesignFileFromFile = parseFromFile P.parseDesignFile
+parseDesignFileFromFile :: [Extension]
+                        -> Map Name NameSpace
+                        -> FilePath
+                        -> IO [DesignUnit]
+parseDesignFileFromFile exts ns = parseFromFile exts ns P.parseDesignFile
