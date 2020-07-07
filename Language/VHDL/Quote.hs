@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module      : Language.VHDL.Quote
--- Copyright   : (c) 2016-2019 Drexel University
+-- Copyright   : (c) 2016-2020 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -121,25 +121,38 @@ quasiquote exts0 ns0 p0 =
                            ((snd . loc_start) loc)
                            0
 
-qqExp :: Typeable a => a -> Maybe ExpQ
-qqExp = const Nothing `extQ` qqExpE
-
-qqPat :: Typeable a => a -> Maybe PatQ
-qqPat = const Nothing `extQ` qqExpP
 
 antiExpQ :: String -> ExpQ
 antiExpQ = either fail return . parseExp
 
-antiPatQ :: String -> PatQ
-antiPatQ = either fail return . parsePat
-
 qqLocE :: SrcLoc -> ExpQ
 qqLocE = dataToExpQ qqExp
+
+qqStringE :: String -> Maybe (Q Exp)
+qqStringE s = Just $ litE $ stringL s
 
 qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
 
+qqExp :: Typeable a => a -> Maybe ExpQ
+qqExp = const Nothing `extQ` qqStringE
+                      `extQ` qqExpE
+
+antiPatQ :: String -> PatQ
+antiPatQ = either fail return . parsePat
+
+qqStringP :: String -> Maybe (Q Pat)
+qqStringP s = Just $ litP $ stringL s
+
+qqLocP :: Data.Loc.Loc -> Maybe (Q Pat)
+qqLocP _ = Just wildP
+
 qqExpP :: V.Exp -> Maybe PatQ
 qqExpP (V.AntiExp e _)    = Just $ antiPatQ e
 qqExpP _                  = Nothing
+
+qqPat :: Typeable a => a -> Maybe PatQ
+qqPat = const Nothing `extQ` qqStringP
+                      `extQ` qqLocP
+                      `extQ` qqExpP
