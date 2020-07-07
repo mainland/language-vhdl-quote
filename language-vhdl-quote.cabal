@@ -96,6 +96,24 @@ test-suite unit
   if flag(full-haskell-antiquotes)
     cpp-options: -DFULL_HASKELL_ANTIQUOTES
 
+executable parser
+  main-is: Main.hs
+  default-language: Haskell2010
+  hs-source-dirs:
+    examples/parse
+
+  other-modules:
+    Opts
+
+  build-depends:
+    language-vhdl-quote,
+    base            >= 4.5 && < 5,
+    containers      >= 0.5 && < 0.7,
+    bytestring      >= 0.9 && < 0.11,
+    mainland-pretty >= 0.7 && < 0.8,
+    srcloc          >= 0.4 && < 0.6,
+    text            >= 1.2 && < 1.3
+
 source-repository head
   type:     git
   location: git://github.com/mainland/language-vhdl-quote.git
