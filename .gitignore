@@ -1,0 +1,8 @@
+.stack-work/
+Language/VHDL/Parser/Lexer.hs
+Language/VHDL/Parser/Lexer.info
+Language/VHDL/Parser/Parser.hs
+Language/VHDL/Parser/Parser.info
+bin/parser
+dist-newstyle/
+stack.yaml.lock
