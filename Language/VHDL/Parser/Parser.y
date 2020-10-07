@@ -2472,6 +2472,8 @@ time_expression : expression { $1 }
 simple_expression :: { Exp }
 simple_expression :
     primary                                    { $1 }
+  | '+' primary                                { unopE Plus $2 }
+  | '-' primary                                { unopE Neg $2 }
   | 'and' primary                              { unopE UAnd $2 }
   | 'or' primary                               { unopE UOr $2 }
   | 'nand' primary                             { unopE UNand $2 }

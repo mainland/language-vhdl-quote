@@ -1781,6 +1781,7 @@ miscellaneous_operator ::= ** | abs | not
 -}
 
 data Unop = Cond -- ^ Conditional conversion
+          | Plus -- ^ Positive
           | Neg  -- ^ Negate
           | Abs  -- ^ Absolute value
           | Not  -- ^ Not
@@ -1794,6 +1795,7 @@ data Unop = Cond -- ^ Conditional conversion
 
 instance HasFixity Unop where
     fixity Cond  = infixl_ 0
+    fixity Plus  = infixl_ 5
     fixity Neg   = infixl_ 5
     fixity Abs   = infixl_ 7
     fixity Not   = infixl_ 7
@@ -1806,6 +1808,7 @@ instance HasFixity Unop where
 
 instance Pretty Unop where
     ppr Cond  = text "??"
+    ppr Plus  = char '+'
     ppr Neg   = char '-'
     ppr Abs   = text "abs"
     ppr Not   = text "not"
