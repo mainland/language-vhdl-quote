@@ -1943,6 +1943,8 @@ data Lit = IntLit       String Integer   !SrcLoc
          | BitStringLit String           !SrcLoc
          | PhysLit      (Maybe Lit) Name !SrcLoc
          | Null                          !SrcLoc
+         | AntiInt      String           !SrcLoc
+         | AntiReal     String           !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty Lit where
@@ -1954,6 +1956,8 @@ instance Pretty Lit where
     ppr (BitStringLit s _) = text s
     ppr (PhysLit lit n _)  = ppr lit <+> ppr n
     ppr Null{}             = text "null"
+    ppr (AntiInt e _)      = pprAnti "int" e
+    ppr (AntiReal e _)     = pprAnti "real" e
 
 {-
 [§ 9.3.3]

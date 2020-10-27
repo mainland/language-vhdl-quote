@@ -131,12 +131,26 @@ qqLocE = dataToExpQ qqExp
 qqStringE :: String -> Maybe (Q Exp)
 qqStringE s = Just $ litE $ stringL s
 
+qqLitE :: V.Lit -> Maybe ExpQ
+qqLitE (V.AntiInt e loc)  = Just [|let x = $(antiExpQ e)
+                                   in
+                                     V.IntLit (show x)
+                                              (fromIntegral x)
+                                              $(qqLocE loc)|]
+qqLitE (V.AntiReal e loc) = Just [|let x = $(antiExpQ e)
+                                   in
+                                     V.RealLit (show x)
+                                               (toRational x)
+                                               $(qqLocE loc)|]
+qqLitE _                  = Nothing
+
 qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
 
 qqExp :: Typeable a => a -> Maybe ExpQ
 qqExp = const Nothing `extQ` qqStringE
+                      `extQ` qqLitE
                       `extQ` qqExpE
 
 antiPatQ :: String -> PatQ
@@ -148,6 +162,15 @@ qqStringP s = Just $ litP $ stringL s
 qqLocP :: Data.Loc.Loc -> Maybe (Q Pat)
 qqLocP _ = Just wildP
 
+qqLitP :: V.Lit -> Maybe PatQ
+qqLitP = go
+  where
+    go (V.AntiInt e _)  = Just $ con "V.IntLit" [wildP, antiPatQ e, wildP]
+    go (V.AntiReal e _) = Just $ con "V.RealLit" [wildP, antiPatQ e, wildP]
+    go _                = Nothing
+
+    con n = conP (mkName n)
+
 qqExpP :: V.Exp -> Maybe PatQ
 qqExpP (V.AntiExp e _)    = Just $ antiPatQ e
 qqExpP _                  = Nothing
@@ -155,4 +178,5 @@ qqExpP _                  = Nothing
 qqPat :: Typeable a => a -> Maybe PatQ
 qqPat = const Nothing `extQ` qqStringP
                       `extQ` qqLocP
+                      `extQ` qqLitP
                       `extQ` qqExpP

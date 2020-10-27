@@ -95,8 +95,10 @@ $basic_char    = [$basic_graphic]
 
 vhdl :-
 <0> {
-  "$"     / { allowAnti } { lexAnti Tanti_exp }
-  "$exp:" / { allowAnti } { lexAnti Tanti_exp }
+  "$"      / { allowAnti } { lexAnti Tanti_exp }
+  "$exp:"  / { allowAnti } { lexAnti Tanti_exp }
+  "$int:"  / { allowAnti } { lexAnti Tanti_int }
+  "$real:" / { allowAnti } { lexAnti Tanti_real }
 }
 
 <0> {

@@ -205,7 +205,9 @@ import Language.VHDL.Syntax hiding (L)
   '?>=' { L _ T.Tmatch_ge }
   '?>'  { L _ T.Tmatch_gt }
 
-  ANTI_EXP { L _ T.Tanti_exp{} }
+  ANTI_EXP  { L _ T.Tanti_exp{} }
+  ANTI_INT  { L _ T.Tanti_int{} }
+  ANTI_REAL { L _ T.Tanti_real{} }
 
 %left DIRECTION
 %left '??'
@@ -3830,6 +3832,8 @@ abstract_literal :
             in
               RealLit s r (srclocOf $1)
           }
+  | ANTI_INT  { AntiInt (getANTI_INT $1) (srclocOf $1) }
+  | ANTI_REAL { AntiReal (getANTI_REAL $1) (srclocOf $1) }
 
 {-
 [§ 15.6]
@@ -3912,6 +3916,12 @@ getOPERATOR (L _ (T.Toperator x)) = x
 
 getANTI_EXP :: L T.Token -> String
 getANTI_EXP (L _ (T.Tanti_exp e)) = e
+
+getANTI_INT :: L T.Token -> String
+getANTI_INT (L _ (T.Tanti_int e)) = e
+
+getANTI_REAL :: L T.Token -> String
+getANTI_REAL (L _ (T.Tanti_real e)) = e
 
 unopE :: Unop -> Exp -> Exp
 unopE op e = UnopE op e (srclocOf e)
