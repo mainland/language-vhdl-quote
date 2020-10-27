@@ -949,10 +949,9 @@ secondary_unit_declaration :
 
 physical_literal :: { Lit }
 physical_literal :
-{- This conflicts with a variable expression
-  name
-  { PhysLit Nothing $1 (srclocOf $1) }
--}
+-- XXX conflicts with a variable expression
+--  name
+--  { PhysLit Nothing $1 (srclocOf $1) }
   abstract_literal name
     { PhysLit (Just $1) $2 ($1 `srcspan` $2) }
 
@@ -1061,7 +1060,7 @@ discrete_range_rlist :
 discrete_range :: { DiscreteRange }
 discrete_range :
     range              { RangeDR $1 (srclocOf $1) }
--- We leave out this option since it leads to a reduce/reduce conflict
+-- XXX conflict: We leave out this option since it leads to a reduce/reduce conflict
 --  | subtype_indication { SubtypeDR $1 (srclocOf $1) }
 
 {-
@@ -2538,12 +2537,12 @@ numeric_literal ::=
 literal :: { Lit }
 literal :
      numeric_literal     { $1 }
--- Conflicts with operator names and more!
+-- XXX conflicts with operator names and more!
 --  |  enumeration_literal { $1 }
--- Conflicts with operator names
+-- XXX conflicts with operator names
   |  string_literal      { $1 }
   |  bit_string_literal  { $1 }
--- Conflicts with null waveform
+-- XXX conflicts with null waveform
 --  |  'null'              { Null (srclocOf $1) }
 
 numeric_literal :: { Lit }
@@ -3767,8 +3766,8 @@ context_item_rlist :
 context_item :: { Context }
 context_item :
     'library' name_rlist ';' { LibC (rev $2) ($1 `srcspan` $3 ) }
--- Conflicts with use in declaration
---  | 'use' name_rlist ';'     { UseC (rev $2) ($1 `srcspan` $3 ) }
+  -- XXX conflicts with 'use' in declaration
+  -- | 'use' name_rlist ';'     { UseC (rev $2) ($1 `srcspan` $3 ) }
   | 'context' name_rlist ';' { ContextRefC (rev $2) ($1 `srcspan` $3 ) }
 
 {-
