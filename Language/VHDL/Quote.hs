@@ -121,7 +121,6 @@ quasiquote exts0 ns0 p0 =
                            ((snd . loc_start) loc)
                            0
 
-
 antiExpQ :: String -> ExpQ
 antiExpQ = either fail return . parseExp
 
