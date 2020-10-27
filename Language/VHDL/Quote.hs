@@ -67,6 +67,10 @@ qq = quasiquote defaultExtensions defaultNamespace
       [ ("Word", V.TypeN)
       , ("Bit", V.TypeN)
       , ("Natural", V.TypeN)
+      , ("std_logic", V.TypeN)
+      , ("std_logic_vector", V.TypeN)
+      , ("sfixed", V.TypeN)
+      , ("ufixed", V.TypeN)
       ]
 
 vtype :: QuasiQuoter
