@@ -2891,7 +2891,7 @@ data DesignUnit = DesignUnit [Context] Decl !SrcLoc
 
 instance Pretty DesignUnit where
     ppr (DesignUnit cs decl _) =
-      (align . sep . punctuate semi) (map ppr cs ++ [ppr decl])
+      (align . stack . punctuate semi) (map ppr cs ++ [ppr decl])
 
     pprList units =
       stack (map ppr units)
