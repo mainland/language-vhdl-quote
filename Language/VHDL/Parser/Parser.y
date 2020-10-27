@@ -232,7 +232,7 @@ import Language.VHDL.Syntax hiding (L)
 %name parseName name
 %name parseDecl declaration
 %name parseIDecl interface_declaration
-%name parseType type_definition
+%name parseType subtype_indication
 %name parseLit abstract_literal
 %name parseExp expression
 %name parseStm sequential_statement
