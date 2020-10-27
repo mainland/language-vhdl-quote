@@ -21,6 +21,7 @@ module Language.VHDL.Quote (
     vcstm,
     vdecl,
     videcl,
+    vunit,
     vfile
   ) where
 
@@ -88,6 +89,9 @@ vdecl = qq P.parseDecl
 
 videcl :: QuasiQuoter
 videcl = qq P.parseIDecl
+
+vunit :: QuasiQuoter
+vunit = qq P.parseDesignUnit
 
 vfile :: QuasiQuoter
 vfile = qq P.parseDesignFile

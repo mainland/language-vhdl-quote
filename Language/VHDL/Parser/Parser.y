@@ -228,6 +228,7 @@ import Language.VHDL.Syntax hiding (L)
 %error { happyError }
 
 %name parseDesignFile design_file
+%name parseDesignUnit design_unit
 %name parseName name
 %name parseDecl declaration
 %name parseIDecl interface_declaration
