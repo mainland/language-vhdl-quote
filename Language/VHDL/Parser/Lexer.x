@@ -453,24 +453,20 @@ lexCharLit beg cur = do
         return c
 
 lexStringLit :: Action P Token
-lexStringLit beg cur = do
-    s   <- lexString ""
-    end <- getInput
+lexStringLit beg end = do
     let raw :: String
         raw = inputString beg end
+        s :: String
+        s = lexString (tail raw)
     if isOperator s
       then return $ locateTok beg end (Toperator (raw, s))
       else return $ locateTok beg end (TstringLit (raw, s))
   where
-    lexString :: String -> P String
-    lexString s = do
-        c <- nextChar
-        case c of
-          '"'  -> do c' <- peekChar
-                     if c' == '"'
-                       then skipChar >> lexString ('"' : s)
-                       else return (reverse s)
-          _    -> lexString (c : s)
+    lexString :: String -> String
+    lexString []               = error "can't happen"
+    lexString ['"']            = ""
+    lexString ('"' : '"' : cs) = '"' : lexString cs
+    lexString (x : cs)         = x : lexString cs
 
 lexBitStringLit :: Action P Token
 lexBitStringLit beg end =
