@@ -2297,7 +2297,7 @@ prefix :
     identifier '.'
       {% setPrefix $ rsingleton $1 }
   | identifier error
-      {% expected ["`.'"] (Just $ text "identifier that is part of a prefix") }
+      {% expected ["`.'"] (Just $ text "identifier" <+> quote (ppr $1) <+> text "that is part of a prefix") }
   | prefix identifier '.'
       {% setPrefix $ rcons $2 $1 }
 

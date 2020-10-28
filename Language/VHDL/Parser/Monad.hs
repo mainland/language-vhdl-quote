@@ -62,6 +62,8 @@ module Language.VHDL.Parser.Monad (
     unclosed,
     expected,
     expectedAt,
+
+    quote
   ) where
 
 #if !MIN_VERSION_base(4,8,0)
