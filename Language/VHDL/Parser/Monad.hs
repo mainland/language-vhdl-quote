@@ -24,6 +24,7 @@ module Language.VHDL.Parser.Monad (
     pushLexState,
     popLexState,
     getLexState,
+    getPrevToken,
     getCurToken,
     setCurToken,
 
@@ -105,6 +106,7 @@ type Extensions = Word32
 
 data PState = PState
     { input      :: !AlexInput
+    , prevToken  :: Maybe (L Token)
     , curToken   :: L Token
     , lexState   :: ![Int]
     , extensions :: !Extensions
@@ -119,6 +121,7 @@ emptyPState :: [Extension]
             -> PState
 emptyPState exts ns buf pos = PState
     { input      = alexInput buf pos
+    , prevToken  = Nothing
     , curToken   = error "no token"
     , lexState   = [0]
     , extensions = foldl' setBit 0 (map fromEnum exts)
@@ -193,11 +196,16 @@ popLexState = do
 getLexState :: P Int
 getLexState = gets (head . lexState)
 
+getPrevToken :: P (Maybe (L Token))
+getPrevToken = gets prevToken
+
 getCurToken :: P (L Token)
 getCurToken = gets curToken
 
 setCurToken :: L Token -> P ()
-setCurToken tok = modify $ \s -> s { curToken = tok }
+setCurToken tok = modify $ \s -> s { prevToken = Just (curToken s)
+                                   , curToken  = tok
+                                   }
 
 useExts :: Extensions -> P Bool
 useExts ext = gets $ \s -> extensions s .&. ext /= 0
