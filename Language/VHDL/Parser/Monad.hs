@@ -330,14 +330,15 @@ unclosed :: Loc -> String -> P a
 unclosed loc x =
     parserError (locEnd loc) (text "unclosed" <+> quote (text x))
 
-expected :: [String] -> Maybe String -> P b
+expected :: [String] -> Maybe Doc -> P b
 expected alts after = do
     tok <- getCurToken
     expectedAt tok alts after
 
-expectedAt :: L Token -> [String] -> Maybe String -> P b
+expectedAt :: L Token -> [String] -> Maybe Doc -> P b
 expectedAt tok@(L loc _) alts after =
-    parserError (locStart loc) (text "Expected" <+> pprAlts alts <+> pprGot tok <> pprAfter after)
+    parserError (locStart loc) $
+    text "Expected" <+> pprAlts alts <+> pprGot tok <> pprAfter after
   where
     pprAlts :: [String] -> Doc
     pprAlts []        = empty
@@ -349,9 +350,9 @@ expectedAt tok@(L loc _) alts after =
     pprGot (L _ Teof)  = text "but reached end of file"
     pprGot (L _ t)     = text "but got" <+> quote (ppr t)
 
-    pprAfter :: Maybe String -> Doc
+    pprAfter :: Maybe Doc -> Doc
     pprAfter Nothing     = empty
-    pprAfter (Just what) = text " after" <+> text what
+    pprAfter (Just what) = text " after" <+> what
 
 quote :: Doc -> Doc
 quote = enclose (char '`') (char '\'')
