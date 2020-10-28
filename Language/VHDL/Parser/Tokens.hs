@@ -225,6 +225,12 @@ data Token = Teof
            | Tanti_cstms String
   deriving (Eq, Ord, Read, Show)
 
+
+pprSym :: Symbol -> Doc
+pprSym = quote . text . unintern
+  where
+    quote = enclose (char '`') (char '\'')
+
 instance Pretty Token where
     ppr Teof = text "end of file"
 
@@ -235,11 +241,11 @@ instance Pretty Token where
     ppr (TbitstringLit s)   = text s
     ppr (Toperator (s, _))  = text s
 
-    ppr (Tident sym)      = (text . unintern) sym
-    ppr (Text_ident sym)  = (text . unintern) sym
-    ppr (Ttype_ident sym) = (text . unintern) sym
-    ppr (Tfun_ident sym)  = (text . unintern) sym
-    ppr (Tarr_ident sym)  = (text . unintern) sym
+    ppr (Tident sym)      = text "identifier" <+> pprSym sym
+    ppr (Text_ident sym)  = text "external identifier" <+> pprSym sym
+    ppr (Ttype_ident sym) = text "type identifier" <+> pprSym sym
+    ppr (Tfun_ident sym)  = text "function identifier" <+> pprSym sym
+    ppr (Tarr_ident sym)  = text "array identifier" <+> pprSym sym
 
     ppr Tabs                = text "abs"
     ppr Taccess             = text "access"
