@@ -867,10 +867,12 @@ element_constraint ::=
 -}
 
 data Subtype = Subtype (Maybe Resolution) TypeMark (Maybe Constraint) !SrcLoc
+             | AntiType String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty Subtype where
     ppr (Subtype res ty cons _) = ppr res <+> ppr ty <+> ppr cons
+    ppr (AntiType e _)          = pprAnti "ty" e
 
 data Resolution = FunRes Name !SrcLoc
                 | ArrayElemRes Resolution !SrcLoc

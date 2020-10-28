@@ -208,6 +208,7 @@ import Language.VHDL.Syntax hiding (L)
   ANTI_EXP  { L _ T.Tanti_exp{} }
   ANTI_INT  { L _ T.Tanti_int{} }
   ANTI_REAL { L _ T.Tanti_real{} }
+  ANTI_TYPE { L _ T.Tanti_type{} }
 
 %left DIRECTION
 %left '??'
@@ -1350,6 +1351,8 @@ subtype_indication :
       { Subtype Nothing $1 $2 ($1 `srcspan` $2) }
   | resolution_indication type_mark constraint_opt
       { Subtype (Just $1) $2 $3 ($1 `srcspan` $3) }
+  | ANTI_TYPE
+      { AntiType (getANTI_TYPE $1) (srclocOf $1) }
 
 element_subtype_indication :: { Subtype }
 element_subtype_indication : subtype_indication { $1 }
@@ -3922,6 +3925,9 @@ getANTI_INT (L _ (T.Tanti_int e)) = e
 
 getANTI_REAL :: L T.Token -> String
 getANTI_REAL (L _ (T.Tanti_real e)) = e
+
+getANTI_TYPE :: L T.Token -> String
+getANTI_TYPE (L _ (T.Tanti_type e)) = e
 
 unopE :: Unop -> Exp -> Exp
 unopE op e = UnopE op e (srclocOf e)

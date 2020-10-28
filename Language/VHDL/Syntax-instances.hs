@@ -195,6 +195,7 @@ instance Located SubprogramHeader where
   locOf (SubprogramHeader _ _ l) = locOf l
 instance Located Subtype where
   locOf (Subtype _ l _ _) = locOf l
+  locOf (AntiType _ l) = locOf l
 instance Located Target where
   locOf (NameT l _) = locOf l
   locOf (AggT _ l) = locOf l

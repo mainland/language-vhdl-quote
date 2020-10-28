@@ -99,6 +99,7 @@ vhdl :-
   "$exp:"  / { allowAnti } { lexAnti Tanti_exp }
   "$int:"  / { allowAnti } { lexAnti Tanti_int }
   "$real:" / { allowAnti } { lexAnti Tanti_real }
+  "$ty:"   / { allowAnti } { lexAnti Tanti_type }
 }
 
 <0> {

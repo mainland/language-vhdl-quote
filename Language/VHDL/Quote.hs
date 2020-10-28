@@ -14,6 +14,7 @@
 
 module Language.VHDL.Quote (
     ToExp(..),
+    ToType(..),
     vtype,
     vlit,
     vexp,
@@ -55,6 +56,13 @@ class ToExp a where
 
 instance ToExp V.Exp where
     toExp e _ = e
+
+-- | An instance of 'ToType' can be converted to a 'V.Subtype'.
+class ToType a where
+    toType :: a -> SrcLoc -> V.Subtype
+
+instance ToType V.Subtype where
+    toType tau _ = tau
 
 qq :: Data a => P a -> QuasiQuoter
 qq = quasiquote defaultExtensions defaultNamespace
@@ -155,10 +163,15 @@ qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
 
+qqSubtypeE :: V.Subtype -> Maybe ExpQ
+qqSubtypeE (V.AntiType e loc) = Just [|toType $(antiExpQ e) $(qqLocE loc) :: V.Subtype|]
+qqSubtypeE _                  = Nothing
+
 qqExp :: Typeable a => a -> Maybe ExpQ
 qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqLitE
                       `extQ` qqExpE
+                      `extQ` qqSubtypeE
 
 antiPatQ :: String -> PatQ
 antiPatQ = either fail return . parsePat
