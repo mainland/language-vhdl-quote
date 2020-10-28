@@ -3878,11 +3878,11 @@ bit_string_literal :
 
 {
 happyError :: L T.Token -> P a
-happyError (L loc t) =
-    parserError (locStart loc) (text "parse error on" <+> quote (ppr t))
-  where
-    quote :: Doc -> Doc
-    quote = enclose (char '`') (char '\'')
+happyError (L loc t) = do
+    prev <- getPrevToken
+    parserError (locStart loc) $
+      text "parse error on" <+> quote (ppr t) <+>
+      text "after" <+> ppr prev
 
 getID :: L T.Token -> Symbol
 getID (L _ (T.Tident ident)) = ident
