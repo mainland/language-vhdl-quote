@@ -147,6 +147,7 @@ instance Located Lit where
   locOf (Null l) = locOf l
   locOf (AntiInt _ l) = locOf l
   locOf (AntiReal _ l) = locOf l
+  locOf (AntiLit _ l) = locOf l
 instance Located Name where
   locOf (Name _ _ l) = locOf l
 instance Located (NameList a) where

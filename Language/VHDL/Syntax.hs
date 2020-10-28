@@ -1947,6 +1947,7 @@ data Lit = IntLit       String Integer   !SrcLoc
          | Null                          !SrcLoc
          | AntiInt      String           !SrcLoc
          | AntiReal     String           !SrcLoc
+         | AntiLit      String           !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty Lit where
@@ -1960,6 +1961,7 @@ instance Pretty Lit where
     ppr Null{}             = text "null"
     ppr (AntiInt e _)      = pprAnti "int" e
     ppr (AntiReal e _)     = pprAnti "real" e
+    ppr (AntiLit e _)      = pprAnti "lit" e
 
 {-
 [§ 9.3.3]

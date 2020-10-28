@@ -208,6 +208,7 @@ import Language.VHDL.Syntax hiding (L)
   ANTI_EXP  { L _ T.Tanti_exp{} }
   ANTI_INT  { L _ T.Tanti_int{} }
   ANTI_REAL { L _ T.Tanti_real{} }
+  ANTI_LIT  { L _ T.Tanti_lit{} }
   ANTI_TYPE { L _ T.Tanti_type{} }
 
 %left DIRECTION
@@ -2547,6 +2548,7 @@ literal :
   |  bit_string_literal  { $1 }
 -- XXX conflicts with null waveform
 --  |  'null'              { Null (srclocOf $1) }
+  | ANTI_LIT { AntiLit (getANTI_LIT $1) (srclocOf $1) }
 
 numeric_literal :: { Lit }
 numeric_literal :
@@ -3925,6 +3927,9 @@ getANTI_INT (L _ (T.Tanti_int e)) = e
 
 getANTI_REAL :: L T.Token -> String
 getANTI_REAL (L _ (T.Tanti_real e)) = e
+
+getANTI_LIT :: L T.Token -> String
+getANTI_LIT (L _ (T.Tanti_lit e)) = e
 
 getANTI_TYPE :: L T.Token -> String
 getANTI_TYPE (L _ (T.Tanti_type e)) = e

@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 --------------------------------------------------------------------------------
 -- |
@@ -13,6 +15,7 @@
 --------------------------------------------------------------------------------
 
 module Language.VHDL.Quote (
+    ToLit(..),
     ToExp(..),
     ToType(..),
     vtype,
@@ -50,12 +53,49 @@ import Language.VHDL.Parser
 import qualified Language.VHDL.Parser.Parser as P
 import qualified Language.VHDL.Syntax as V
 
+-- | An instance of 'ToLit' can be converted to a 'V.Lit'.
+class ToLit a where
+    toLit :: a -> SrcLoc -> V.Lit
+
+instance ToLit V.Lit where
+    toLit l _ = l
+
+instance ToLit Integer where
+    toLit n loc = V.IntLit (show n) n loc
+
+instance ToLit Int where
+    toLit n loc = V.IntLit (show n) (toInteger n) loc
+
+instance ToLit Rational where
+    toLit n loc = V.RealLit (show n) n loc
+
+instance ToLit Float where
+    toLit n loc = V.RealLit (show n) (toRational n) loc
+
+instance ToLit Double where
+    toLit n loc = V.RealLit (show n) (toRational n) loc
+
 -- | An instance of 'ToExp' can be converted to a 'V.Exp'.
 class ToExp a where
     toExp :: a -> SrcLoc -> V.Exp
 
 instance ToExp V.Exp where
     toExp e _ = e
+
+instance ToExp Integer where
+    toExp n loc = V.LitE (toLit n loc) loc
+
+instance ToExp Int where
+    toExp n loc = V.LitE (toLit n loc) loc
+
+instance ToExp Rational where
+    toExp n loc = V.LitE (toLit n loc) loc
+
+instance ToExp Float where
+    toExp n loc = V.LitE (toLit n loc) loc
+
+instance ToExp Double where
+    toExp n loc = V.LitE (toLit n loc) loc
 
 -- | An instance of 'ToType' can be converted to a 'V.Subtype'.
 class ToType a where
@@ -157,6 +197,7 @@ qqLitE (V.AntiReal e loc) = Just [|let x = $(antiExpQ e)
                                      V.RealLit (show x)
                                                (toRational x)
                                                $(qqLocE loc)|]
+qqLitE (V.AntiLit e loc)  = Just [|toLit $(antiExpQ e) $(qqLocE loc) :: V.Lit|]
 qqLitE _                  = Nothing
 
 qqExpE :: V.Exp -> Maybe ExpQ
