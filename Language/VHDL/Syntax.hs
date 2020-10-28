@@ -1743,7 +1743,7 @@ instance Pretty Exp where
         parens $ commasep (map ppr elems)
 
     pprPrec _ (CallE f params _) =
-        ppr f <+> parens (commasep (map ppr params))
+        ppr f <> parens (commasep (map ppr params))
 
     pprPrec _ (QualE qe _) =
         ppr qe
