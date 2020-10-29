@@ -1552,9 +1552,9 @@ interface_signal_declaration :
 interface_variable_declaration :: { IDecl }
 interface_variable_declaration :
     'variable' identifier_list ':' mode_opt subtype_indication assn_exp_opt
-      { VarID $2 $4 $5 $6 ($1 `srcspan` $6) }
+      { VarID True $2 $4 $5 $6 ($1 `srcspan` $6) }
   | identifier_list ':' mode_opt subtype_indication assn_exp_opt
-      { VarID $1 $3 $4 $5 ($1 `srcspan` $5) }
+      { VarID False $1 $3 $4 $5 ($1 `srcspan` $5) }
 
 interface_file_declaration :: { IDecl }
 interface_file_declaration :

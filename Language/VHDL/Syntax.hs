@@ -618,22 +618,30 @@ data Decl = EntityD Id (Maybe GenericClause) (Maybe PortClause) [Decl] [CStm] !S
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty Decl where
+    ppr (EntityD ident gens ports [] [] _) =
+        nest 2 (text "entity" <+> ppr ident <+> text "is" </>
+                ppr gens </>
+                ppr ports) </>
+        text "end" <+> ppr ident
+
     ppr (EntityD ident gens ports decls [] _) =
         nest 2 (text "entity" <+> ppr ident <+> text "is" </>
                 ppr gens </>
                 ppr ports </>
                 ppr decls) </>
-        text "end"
+        text "end" <+> ppr ident
 
     ppr (EntityD ident gens ports decls stms _) =
         pprIsBeginEnd (text "entity" <+> ppr ident)
                       (ppr gens </> ppr ports </> ppr decls)
                       (ppr stms)
+                      (Just (ppr ident))
 
     ppr (ArchD ident name decls stms _) =
         pprIsBeginEnd (text "architecture" <+> ppr ident <+> text "of" <+> ppr name)
                       (ppr decls)
                       (ppr stms)
+                      (Just (ppr ident))
 
     ppr (ConfigD ident name decls binds config _) =
         pprIsEnd (text "configuration" <+> ppr ident <+> text "of" <+> ppr name)
@@ -651,7 +659,7 @@ instance Pretty Decl where
         pprMaybe ":=" e
 
     ppr (SignalD idents subty kind e _) =
-        text "constant" <+> commasep (map ppr idents) <+>
+        text "signal" <+> commasep (map ppr idents) <+>
         colon <+> ppr subty <+>
         ppr kind <+>
         pprMaybe ":=" e
@@ -680,7 +688,7 @@ instance Pretty Decl where
         nest 2 (text "component" <+> ppr ident </>
                 ppr gens </>
                 ppr ports) </>
-      text "end component"
+        text "end component"
 
     ppr (GroupTemplateD ident entities isOpen _) =
         nest 2 $
@@ -717,11 +725,13 @@ instance Pretty Decl where
         pprIsBeginEnd (ppr (ProcSpecD f hdr params noLoc))
                       (ppr decls)
                       (ppr stms)
+                      Nothing
 
     ppr (FunD f purity hdr params ret_ty decls stms _) =
         pprIsBeginEnd (ppr (FunSpecD f purity hdr params ret_ty noLoc))
                       (ppr decls)
                       (ppr stms)
+                      Nothing
 
     ppr (ProcInstD inst f sig genmap _) =
         text "procedure" <+> ppr inst <+> text "is new" <+> ppr f <+>
@@ -756,7 +766,7 @@ instance Pretty Decl where
     ppr (UseD use _) =
         ppr use
 
-    pprList = align . stack . punctuate semi . map ppr
+    pprList = semistackall . map ppr
 
 {-
 [§ 6.2]
@@ -1030,7 +1040,7 @@ port_list ::= port_interface_list
 
 data IDecl = ConstID [Id] Subtype (Maybe Exp) !SrcLoc
            | SignalID [Id] Mode Subtype (Maybe SignalKind) (Maybe Exp) !SrcLoc
-           | VarID [Id] Mode Subtype (Maybe Exp) !SrcLoc
+           | VarID Bool [Id] Mode Subtype (Maybe Exp) !SrcLoc
            | FileID [Id] Subtype !SrcLoc
            | TypeID Id !SrcLoc
            | ProcID BaseName [IDecl] (Maybe InterfaceSubprogramDefault) !SrcLoc
@@ -1050,11 +1060,15 @@ instance Pretty IDecl where
       ppr kind <+>
       pprMaybe ":=" e
 
-    ppr (VarID idents mode subty e _) =
-      text "variable" <+>
-      commasep (map ppr idents) <+>
-      colon <+> ppr mode <+> ppr subty <+>
-      pprMaybe ":=" e
+    ppr (VarID var idents mode subty e _) =
+        if var
+          then text "variable" <+> rest
+          else rest
+      where
+        rest :: Doc
+        rest = commasep (map ppr idents) <+>
+               colon <+> ppr mode <+> ppr subty <+>
+               pprMaybe ":=" e
 
     ppr (FileID idents subty _) =
       text "file" <+>
@@ -1077,7 +1091,7 @@ instance Pretty IDecl where
     ppr (PkgInstID ident n genmap _) =
       text "package" <+> ppr ident <+> text "is new" <+> ppr n <+> ppr genmap
 
-    pprList = align . stack . punctuate semi . map ppr
+    pprList = semistack . map ppr
 
 data InterfaceSubprogramDefault = SubprogramD Name !SrcLoc
                                 | AllD !SrcLoc
@@ -2170,16 +2184,16 @@ instance Pretty Stm where
         pprIf :: (Cond, [Stm]) -> Doc
         pprIf (cond, stms) =
           nest 2 $
-          text "if" <+> ppr cond <+> text "then" <+/> ppr stms
+          text "if" <+> ppr cond <+> text "then" </> ppr stms
 
         pprElseIf :: (Cond, [Stm]) -> Doc
         pprElseIf (cond, stms) =
           nest 2 $
-          text "elsif" <+> ppr cond <+> text "then" <+/> ppr stms
+          text "elsif" <+> ppr cond <+> text "then" </> ppr stms
 
         pprElse :: Maybe [Stm] -> Doc
         pprElse Nothing     = empty
-        pprElse (Just stms) = nest 2 $ text "else" <+/> ppr stms
+        pprElse (Just stms) = nest 2 $ text "else" </> ppr stms
 
     ppr (CaseS e isMatch alts _ _) =
         nest 2 (text "case" <+> q <+>
@@ -2216,7 +2230,7 @@ instance Pretty Stm where
     ppr NullS{} =
         text "null"
 
-    pprList = align . stack . punctuate semi . map ppr
+    pprList = semistackall . map ppr
 
 {-
 [§ 10.2]
@@ -2546,7 +2560,7 @@ instance Pretty CStm where
                 text "is" <+/>
                 ppr decls) </>
         nest 2 (text "begin" </> ppr stms) </>
-        text "end block"
+        text "end process"
       where
         postponed :: Doc
         postponed | isPostponed = text "postponed"
@@ -2645,7 +2659,7 @@ instance Pretty CStm where
         pprLabel Nothing    = empty
         pprLabel (Just lbl) = ppr lbl <+> colon
 
-    pprList = align . stack . punctuate semi . map ppr
+    pprList = semistackall . map ppr
 
 {-
 [§ 11.2]
@@ -2899,7 +2913,7 @@ data DesignUnit = DesignUnit [Context] Decl !SrcLoc
 
 instance Pretty DesignUnit where
     ppr (DesignUnit cs decl _) =
-      (align . stack . punctuate semi) (map ppr cs ++ [ppr decl])
+      semistackall (map ppr cs ++ [ppr decl])
 
     pprList units =
       stack (map ppr units)
@@ -2948,7 +2962,7 @@ instance Pretty Context where
     ppr (ContextRefC ns _) =
       text "context" <+> commasep (map ppr ns)
 
-    pprList = align . stack . punctuate semi . map ppr
+    pprList = semistackall . map ppr
 
 {-
 [§ 15.4]
@@ -3007,6 +3021,24 @@ exponent ::= E [ + ] integer | E – integer
 -- Pretty-printing helpers
 --
 
+-- | The document @'punctuateAll' p ds@ obeys the law:
+--
+-- @'punctuateAll' p [d1, d2, ..., dn] = [d1 <> p, d2 <> p, ..., dn <> p]@
+punctuateAll :: Doc -> [Doc] -> [Doc]
+punctuateAll _ []     = []
+punctuateAll p [d]    = [d <> p]
+punctuateAll p (d:ds) = (d <> p) : punctuateAll p ds
+
+-- | The document @'semistack' ds@ semicolon-stacks @ds@, aligning the
+-- resulting document to the current nesting level.
+semistackall :: [Doc] -> Doc
+semistackall = align . stack . punctuateAll semi
+
+-- | The document @'semistack' ds@ semicolon-stacks @ds@, aligning the
+-- resulting document to the current nesting level.
+semistack :: [Doc] -> Doc
+semistack = align . stack . punctuate semi
+
 pprMaybe :: Pretty a => Doc -> Maybe a -> Doc
 pprMaybe _   Nothing  = empty
 pprMaybe pfx (Just x) = pfx <+> ppr x
@@ -3025,11 +3057,11 @@ pprIsEnd is decls =
   nest 2 (is <+> text "is" </> decls) </>
   text "end"
 
-pprIsBeginEnd :: Doc -> Doc -> Doc -> Doc
-pprIsBeginEnd is decls body =
+pprIsBeginEnd :: Doc -> Doc -> Doc -> Maybe Doc -> Doc
+pprIsBeginEnd is decls body close =
   nest 2 (is <+> text "is" </> decls) </>
   nest 2 (text "begin" </> body) </>
-  text "end"
+  text "end" <+> ppr close
 
 pprFor :: Doc -> [Doc] -> Doc
 pprFor arg body =

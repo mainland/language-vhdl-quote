@@ -116,7 +116,7 @@ instance Located GenericMapAspect where
 instance Located IDecl where
   locOf (ConstID _ _ _ l) = locOf l
   locOf (SignalID _ _ _ _ _ l) = locOf l
-  locOf (VarID _ _ _ _ l) = locOf l
+  locOf (VarID _ _ _ _ _ l) = locOf l
   locOf (FileID _ _ l) = locOf l
   locOf (TypeID _ l) = locOf l
   locOf (ProcID _ _ _ l) = locOf l
