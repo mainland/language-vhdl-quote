@@ -207,6 +207,7 @@ data Token = Teof
            | Tanti_string String
            | Tanti_bitstring String
            | Tanti_lit String
+           | Tanti_lits String
 
            | Tanti_type String
 
@@ -416,7 +417,9 @@ instance Pretty Token where
     ppr (Tanti_char e)      = pprAnti "char" e
     ppr (Tanti_string e)    = pprAnti "string" e
     ppr (Tanti_bitstring e) = pprAnti "bitstring" e
+
     ppr (Tanti_lit e)       = pprAnti "lit" e
+    ppr (Tanti_lits e)      = pprAnti "lits" e
 
     ppr (Tanti_type e) = pprAnti "ty" e
 

@@ -206,9 +206,11 @@ import Language.VHDL.Syntax hiding (L)
   '?>'  { L _ T.Tmatch_gt }
 
   ANTI_EXP  { L _ T.Tanti_exp{} }
+  ANTI_EXPS { L _ T.Tanti_exps{} }
   ANTI_INT  { L _ T.Tanti_int{} }
   ANTI_REAL { L _ T.Tanti_real{} }
   ANTI_LIT  { L _ T.Tanti_lit{} }
+  ANTI_LITS { L _ T.Tanti_lits{} }
   ANTI_TYPE { L _ T.Tanti_type{} }
 
 %left DIRECTION
@@ -2579,13 +2581,23 @@ aggregate :
 
 element_associations :: { RevList ElemAssoc }
 element_associations :
-    element_association                          { rsingleton $1 }
-  | element_associations ',' element_association { rcons $3 $1 }
+    element_association
+      { rsingleton $1 }
+  | element_associations ',' element_association
+      { rcons $3 $1 }
+  | element_associations ',' error
+      {% expected ["element association"] Nothing }
 
 element_association :: { ElemAssoc }
 element_association :
-    expression              { ElemAssoc [] $1 (srclocOf $1) }
-  | choices '=>' expression { ElemAssoc (rev $1) $3 ($1 `srcspan` $3) }
+    expression
+      { ElemAssoc [] $1 (srclocOf $1) }
+  | choices '=>' expression
+      { ElemAssoc (rev $1) $3 ($1 `srcspan` $3) }
+  | ANTI_LITS
+      { AntiExpsElemAssoc (getANTI_LITS $1) (srclocOf $1) }
+  | ANTI_EXPS
+      { AntiLitsElemAssoc (getANTI_EXPS $1) (srclocOf $1) }
 
 choices :: { RevList Choice }
 choices :
@@ -3922,6 +3934,9 @@ getOPERATOR (L _ (T.Toperator x)) = x
 getANTI_EXP :: L T.Token -> String
 getANTI_EXP (L _ (T.Tanti_exp e)) = e
 
+getANTI_EXPS :: L T.Token -> String
+getANTI_EXPS (L _ (T.Tanti_exps e)) = e
+
 getANTI_INT :: L T.Token -> String
 getANTI_INT (L _ (T.Tanti_int e)) = e
 
@@ -3930,6 +3945,9 @@ getANTI_REAL (L _ (T.Tanti_real e)) = e
 
 getANTI_LIT :: L T.Token -> String
 getANTI_LIT (L _ (T.Tanti_lit e)) = e
+
+getANTI_LITS :: L T.Token -> String
+getANTI_LITS (L _ (T.Tanti_lits e)) = e
 
 getANTI_TYPE :: L T.Token -> String
 getANTI_TYPE (L _ (T.Tanti_type e)) = e

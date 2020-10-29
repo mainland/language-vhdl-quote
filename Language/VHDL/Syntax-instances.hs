@@ -87,6 +87,8 @@ instance Located DiscreteRange where
   locOf (RangeDR _ l) = locOf l
 instance Located ElemAssoc where
   locOf (ElemAssoc _ _ l) = locOf l
+  locOf (AntiExpsElemAssoc _ l) = locOf l
+  locOf (AntiLitsElemAssoc _ l) = locOf l
 instance Located EntityAspect where
   locOf (EntityEA l _ _) = locOf l
   locOf (ConfigEA l _) = locOf l

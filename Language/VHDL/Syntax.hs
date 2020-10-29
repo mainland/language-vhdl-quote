@@ -1984,11 +1984,15 @@ choice ::=
 type Aggregate = [ElemAssoc]
 
 data ElemAssoc = ElemAssoc Choices Exp !SrcLoc
+               | AntiExpsElemAssoc String !SrcLoc
+               | AntiLitsElemAssoc String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty ElemAssoc where
     ppr (ElemAssoc [] e _)      = ppr e
     ppr (ElemAssoc choices e _) = ppr choices <+> text "=>" <+> ppr e
+    ppr (AntiExpsElemAssoc s _) = pprAnti "exps" s
+    ppr (AntiLitsElemAssoc s _) = pprAnti "lits" s
 
     pprList elems = parens (commasep (map ppr elems))
 

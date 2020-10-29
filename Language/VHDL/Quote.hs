@@ -208,11 +208,22 @@ qqSubtypeE :: V.Subtype -> Maybe ExpQ
 qqSubtypeE (V.AntiType e loc) = Just [|toType $(antiExpQ e) $(qqLocE loc) :: V.Subtype|]
 qqSubtypeE _                  = Nothing
 
+qqElemAssocListE:: [V.ElemAssoc] -> Maybe (Q Exp)
+qqElemAssocListE [] =
+    Just [|[]|]
+qqElemAssocListE (V.AntiExpsElemAssoc v loc : inits) =
+    Just [|[V.ElemAssoc [] (toExp e $(qqLocE loc)) $(qqLocE loc) | e <- $(antiExpQ v)] ++ $(dataToExpQ qqExp inits)|]
+qqElemAssocListE (V.AntiLitsElemAssoc v loc : inits) =
+    Just [|[V.ElemAssoc [] (V.LitE (toLit e $(qqLocE loc)) $(qqLocE loc)) $(qqLocE loc) | e <- $(antiExpQ v)] ++ $(dataToExpQ qqExp inits)|]
+qqElemAssocListE (ini : inis) =
+    Just [|$(dataToExpQ qqExp ini) : $(dataToExpQ qqExp inis)|]
+
 qqExp :: Typeable a => a -> Maybe ExpQ
 qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqLitE
                       `extQ` qqExpE
                       `extQ` qqSubtypeE
+                      `extQ` qqElemAssocListE
 
 antiPatQ :: String -> PatQ
 antiPatQ = either fail return . parsePat
