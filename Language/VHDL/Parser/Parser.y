@@ -2260,11 +2260,11 @@ base_name :
         in
           EnumN lit (srclocOf $1)
       }
+  | 'arrname' identifier '(' expression_rlist ')'
+      { IndexedN $2 (rev $4) ($1 `srcspan` $5) }
+  | 'arrname' identifier '(' discrete_range ')'
+      { SliceN $2 $4 ($1 `srcspan` $5) }
 {-
-  | identifier '(' expression_rlist ')'
-      { IndexedN $1 (rev $3) ($1 `srcspan` $4) }
-  | identifier '(' discrete_range ')'
-      { SliceN $1 $3 ($1 `srcspan` $4) }
   | identifier signature_opt '\'' attribute_designator attr_arg_opt
       { AttrN $1 $2 $4 $5 ($1 `srcspan` $5) }
 -}
@@ -2466,13 +2466,11 @@ expression :
   | expression '?>=' expression  { binopE GeM $1 $3 }
   | expression '?>' expression   { binopE GtM $1 $3 }
 
-{-
 expression_rlist :: { RevList Exp }
 expression_rlist :
     {- empty -}                     { rnil }
   | expression                      { rsingleton $1 }
   | expression_rlist ',' expression { rcons $3 $1 }
--}
 
 time_expression :: { Exp }
 time_expression : expression { $1 }
