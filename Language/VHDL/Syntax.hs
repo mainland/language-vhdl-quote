@@ -2211,11 +2211,11 @@ instance Pretty Stm where
           ppr stms
 
     ppr (WhileS cond stms _ _) =
-        nest 2 (text "while" <+> ppr cond <+> text "loop" <+/> ppr stms) </>
+        nest 2 (text "while" <+> ppr cond <+> text "loop" </> ppr stms) </>
         text "end loop"
 
     ppr (ForS ident rng stms _ _) =
-        nest 2 (text "for" <+> ppr ident <+> text "in" <+> ppr rng <+> text "loop" <+/> ppr stms) </>
+        nest 2 (text "for" <+> ppr ident <+> text "in" <+> ppr rng <+> text "loop" </> ppr stms) </>
         text "end loop"
 
     ppr (NextS lbl cond _) =
@@ -2557,7 +2557,7 @@ instance Pretty CStm where
     ppr (ProcessS isPostponed sense decls stms _) =
         nest 2 (postponed <+> text "process" <+>
                 ppr sense <+>
-                text "is" <+/>
+                text "is" </>
                 ppr decls) </>
         nest 2 (text "begin" </> ppr stms) </>
         text "end process"
