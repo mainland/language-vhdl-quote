@@ -215,6 +215,8 @@ import Language.VHDL.Syntax hiding (L)
 
 %left DIRECTION
 %left '??'
+%left LABEL
+%left '|'
 %left 'and' 'or' 'nand' 'nor' 'xor' 'xnor'
 %nonassoc 'nand' 'nor'
 %left '=' '/=' '<' '<=' '>' '>=' '?=' '?/=' '?<' '?<=' '?>' '?>='
@@ -238,7 +240,7 @@ import Language.VHDL.Syntax hiding (L)
 %name parseIDecl interface_declaration
 %name parseType subtype_indication
 %name parseLit abstract_literal
-%name parseExp expression
+%name parseExp only_expression
 %name parseStm sequential_statement
 %name parseCStm concurrent_statement
 
@@ -460,9 +462,18 @@ block_specification :
 
 generate_specification :: { GenSpec }
 generate_specification :
-    discrete_range { RangeG $1 (srclocOf $1) }
-  | expression     { ExpG $1 (srclocOf $1) }
-  | label          { AltG $1 (srclocOf $1) }
+    discrete_range
+      { RangeG $1 (srclocOf $1) }
+  | expression
+      {% case $1 of
+           { ExpR (VarE (Name [] (IdN ident _) _) _) ->
+               pure $ AltG ident (srclocOf $1)
+           ; _ ->
+               do { e <- checkExp $1
+                  ; pure $ ExpG e (srclocOf e)
+                  }
+           }
+      }
 
 configuration_item :: { Config }
 configuration_item :
@@ -867,7 +878,11 @@ range_constraint : 'range' range { $2 }
 range :: { Range }
 range :
     simple_expression direction simple_expression %prec DIRECTION
-      { Range $1 $2 $3 ($1 `srcspan` $3) }
+      {% do { e1 <- checkExp $1
+            ; e2 <- checkExp $3
+            ; pure $ Range e1 $2 e2 ($1 `srcspan` $3)
+            }
+      }
 
 direction :: { Direction }
 direction :
@@ -1477,8 +1492,13 @@ shared_opt :
 
 assn_exp_opt :: { Maybe Exp }
 assn_exp_opt :
-    {- empty -}     { Nothing }
-  | ':=' expression { Just $2 }
+    {- empty -}
+      { Nothing }
+  | ':=' expression
+    {% do { e <- checkExp $2
+          ; pure $ Just e
+          }
+    }
 
 file_declaration :: { Decl }
 file_declaration :
@@ -1492,8 +1512,17 @@ file_open_information_opt :
 
 file_open_information :: { FileOpenInfo }
 file_open_information :
-    'open' expression 'is' expression { FileOpenInfo (Just $2) $4 }
-  | 'is' expression                   { FileOpenInfo Nothing $2 }
+    'open' expression 'is' expression
+      {% do { kind <- checkExp $2
+            ; name <- checkExp $4
+            ; pure $ FileOpenInfo (Just kind) name
+            }
+      }
+  | 'is' expression
+      {% do { name <- checkExp $2
+            ; pure $ FileOpenInfo Nothing name
+            }
+      }
 
 {-
 [§ 6.5.2]
@@ -1786,55 +1815,7 @@ port_map_aspect ::=
 -}
 
 association_list :: { [AssocElem] }
-association_list : association_element_rlist { rev $1 }
-
-association_element_rlist :: { RevList AssocElem }
-association_element_rlist :
-    association_element
-      { rsingleton $1 }
-  | association_element_rlist ',' association_element
-      { rcons $3 $1 }
-
-association_element :: { AssocElem }
-association_element :
-    formal_part '=>' actual_part
-      {% do { formal <- checkFormalPart $1
-            ; return $ AssocElem (Just formal) $3 (formal `srcspan` $3)
-            }
-      }
-  | actual_part
-      { AssocElem Nothing $1 (srclocOf $1) }
-
-formal_part :: { ActualPart }
-formal_part : name { Part (NameA $1 (srclocOf $1)) (srclocOf $1) }
-
-actual_part :: { ActualPart }
-actual_part :
-    actual_designator
-      { Part $1 (srclocOf $1) }
-  | function_name '(' actual_designator ')'
-      { FunPart $1 $3 ($1 `srcspan` $4) }
-  | type_mark '(' actual_designator ')'
-      { TypePart $1 $3 ($1 `srcspan` $4) }
-
-actual_designator :: { ActualDesignator }
-actual_designator :
-    expression
-      { ExpA False $1 (srclocOf $1) }
-  | 'inertial' expression
-      { ExpA True $2 ($1 `srcspan` $2) }
-  | name
-      { NameA $1 (srclocOf $1) }
-  | subtype_indication
-      { SubtypeA $1 (srclocOf $1) }
--- Can't differentiate between the following actual_parts:
--- subtype_indication: type_mark '(' 'open' ')' [ array_element_constraint ]
--- and
--- type_mark '(' 'open' ')'
-{-
-  | 'open'
-      { OpenA (srclocOf $1) }
--}
+association_list : expression_rlist {% mapM checkArg (rev $1) }
 
 generic_map_aspect :: { GenericMapAspect }
 generic_map_aspect :
@@ -1997,7 +1978,10 @@ entity_tag ::= simple_name | character_literal | operator_symbol
 attribute_specification :: { Decl }
 attribute_specification :
     'attribute' attribute_designator 'of' entity_specification 'is' expression ';'
-      { AttrSpecD $2 (fst $4) (snd $4) $6 ($1 `srcspan` $7) }
+      {% do { e <- checkExp $6
+            ; pure $ AttrSpecD $2 (fst $4) (snd $4) e ($1 `srcspan` $7)
+            }
+      }
 
 entity_specification :: { (NameList EntityDesignator, EntityClass) }
 entity_specification :
@@ -2167,8 +2151,11 @@ signal_list ::=
 
 disconnection_specification :: { Decl }
 disconnection_specification :
-    'disconnect' guarded_signal_specification 'after' time_expression
-      { DisconnectD (fst $2) (snd $2) $4 ($1 `srcspan` $4) }
+    'disconnect' guarded_signal_specification 'after' expression
+      {% do { e <- checkExp $4
+            ; pure $ DisconnectD (fst $2) (snd $2) e ($1 `srcspan` $4)
+            }
+      }
 
 guarded_signal_specification :: { (SignalList, TypeMark) }
 guarded_signal_specification :
@@ -2261,7 +2248,10 @@ base_name :
           EnumN lit (srclocOf $1)
       }
   | 'arrname' identifier '(' expression_rlist ')'
-      { IndexedN $2 (rev $4) ($1 `srcspan` $5) }
+      {% do { es <- mapM checkExp (rev $4)
+            ; pure $ IndexedN $2 es ($1 `srcspan` $5)
+            }
+      }
   | 'arrname' identifier '(' discrete_range ')'
       { SliceN $2 $4 ($1 `srcspan` $5) }
 {-
@@ -2437,91 +2427,114 @@ multiplying_operator ::= * | / | mod | rem
 miscellaneous_operator ::= ** | abs | not
 -}
 
-expression :: { Exp }
+only_expression :: { Exp }
+only_expression :
+    expression {% checkExp $1 }
+
+expression :: { RichExp }
 expression :
-    simple_expression { $1 }
-  | '??' primary                 { unopE Cond $2 }
-  | expression 'and' expression  { binopE And $1 $3 }
-  | expression 'or' expression   { binopE Or $1 $3 }
-  | expression 'nand' expression { binopE Nand $1 $3 }
-  | expression 'nor' expression  { binopE Nor $1 $3 }
-  | expression 'xor' expression  { binopE Xor $1 $3 }
-  | expression 'xnor' expression { binopE Xnor $1 $3 }
-  | expression 'sll' expression  { binopE Sll $1 $3 }
-  | expression 'srl' expression  { binopE Srl $1 $3 }
-  | expression 'sla' expression  { binopE Sla $1 $3 }
-  | expression 'sra' expression  { binopE Sra $1 $3 }
-  | expression 'rol' expression  { binopE Rol $1 $3 }
-  | expression 'ror' expression  { binopE Ror $1 $3 }
-  | expression '=' expression    { binopE Eq $1 $3 }
-  | expression '/=' expression   { binopE Ne $1 $3 }
-  | expression '<' expression    { binopE Lt $1 $3 }
-  | expression '<=' expression   { binopE Le $1 $3 }
-  | expression '>=' expression   { binopE Ge $1 $3 }
-  | expression '>' expression    { binopE Gt $1 $3 }
-  | expression '?=' expression   { binopE EqM $1 $3 }
-  | expression '?/=' expression  { binopE NeM $1 $3 }
-  | expression '?<' expression   { binopE LtM $1 $3 }
-  | expression '?<=' expression  { binopE LeM $1 $3 }
-  | expression '?>=' expression  { binopE GeM $1 $3 }
-  | expression '?>' expression   { binopE GtM $1 $3 }
+    simple_expression            { $1 }
+  | '??' primary                 {% unopRE Cond $2 }
+  | expression 'and' expression  {% binopRE And $1 $3 }
+  | expression 'or' expression   {% binopRE Or $1 $3 }
+  | expression 'nand' expression {% binopRE Nand $1 $3 }
+  | expression 'nor' expression  {% binopRE Nor $1 $3 }
+  | expression 'xor' expression  {% binopRE Xor $1 $3 }
+  | expression 'xnor' expression {% binopRE Xnor $1 $3 }
+  | expression 'sll' expression  {% binopRE Sll $1 $3 }
+  | expression 'srl' expression  {% binopRE Srl $1 $3 }
+  | expression 'sla' expression  {% binopRE Sla $1 $3 }
+  | expression 'sra' expression  {% binopRE Sra $1 $3 }
+  | expression 'rol' expression  {% binopRE Rol $1 $3 }
+  | expression 'ror' expression  {% binopRE Ror $1 $3 }
+  | expression '=' expression    {% binopRE Eq $1 $3 }
+  | expression '/=' expression   {% binopRE Ne $1 $3 }
+  | expression '<' expression    {% binopRE Lt $1 $3 }
+  | expression '<=' expression   {% binopRE Le $1 $3 }
+  | expression '>=' expression   {% binopRE Ge $1 $3 }
+  | expression '>' expression    {% binopRE Gt $1 $3 }
+  | expression '?=' expression   {% binopRE EqM $1 $3 }
+  | expression '?/=' expression  {% binopRE NeM $1 $3 }
+  | expression '?<' expression   {% binopRE LtM $1 $3 }
+  | expression '?<=' expression  {% binopRE LeM $1 $3 }
+  | expression '?>=' expression  {% binopRE GeM $1 $3 }
+  | expression '?>' expression   {% binopRE GtM $1 $3 }
+  | name ':' expression %prec LABEL
+      {% do { ident <- checkIdentifier $1
+            ; pure $ LabeledR ident $3
+            }
+      }
+  | expression '|' expression
+      {% do { cs <- checkChoices $1
+            ; c  <- checkChoice $3
+            ; pure $ ChoicesR (c:cs)
+            }
+      }
 
-expression_rlist :: { RevList Exp }
-expression_rlist :
-    {- empty -}                     { rnil }
-  | expression                      { rsingleton $1 }
-  | expression_rlist ',' expression { rcons $3 $1 }
-
-time_expression :: { Exp }
-time_expression : expression { $1 }
-
-simple_expression :: { Exp }
+simple_expression :: { RichExp }
 simple_expression :
     primary                                    { $1 }
-  | '+' primary                                { unopE Plus $2 }
-  | '-' primary                                { unopE Neg $2 }
-  | 'and' primary                              { unopE UAnd $2 }
-  | 'or' primary                               { unopE UOr $2 }
-  | 'nand' primary                             { unopE UNand $2 }
-  | 'nor' primary                              { unopE UNor $2 }
-  | 'xor' primary                              { unopE UXor $2 }
-  | 'xnor' primary                             { unopE UXnor $2 }
-  | 'abs' primary                              { unopE Abs $2 }
-  | 'not' primary                              { unopE Not $2 }
-  | simple_expression '+' simple_expression    { binopE Add $1 $3 }
-  | simple_expression '-' simple_expression    { binopE Sub $1 $3 }
-  | simple_expression '&' simple_expression    { binopE Cat $1 $3 }
-  | simple_expression '*' simple_expression    { binopE Mul $1 $3 }
-  | simple_expression '/' simple_expression    { binopE Div $1 $3 }
-  | simple_expression 'mod' simple_expression  { binopE Mod $1 $3 }
-  | simple_expression 'rem' simple_expression  { binopE Rem $1 $3 }
-  | simple_expression '**' simple_expression   { binopE Pow $1 $3 }
+  | '+' primary                                {% unopRE Plus $2 }
+  | '-' primary                                {% unopRE Neg $2 }
+  | 'and' primary                              {% unopRE UAnd $2 }
+  | 'or' primary                               {% unopRE UOr $2 }
+  | 'nand' primary                             {% unopRE UNand $2 }
+  | 'nor' primary                              {% unopRE UNor $2 }
+  | 'xor' primary                              {% unopRE UXor $2 }
+  | 'xnor' primary                             {% unopRE UXnor $2 }
+  | 'abs' primary                              {% unopRE Abs $2 }
+  | 'not' primary                              {% unopRE Not $2 }
+  | simple_expression '+' simple_expression    {% binopRE Add $1 $3 }
+  | simple_expression '-' simple_expression    {% binopRE Sub $1 $3 }
+  | simple_expression '&' simple_expression    {% binopRE Cat $1 $3 }
+  | simple_expression '*' simple_expression    {% binopRE Mul $1 $3 }
+  | simple_expression '/' simple_expression    {% binopRE Div $1 $3 }
+  | simple_expression 'mod' simple_expression  {% binopRE Mod $1 $3 }
+  | simple_expression 'rem' simple_expression  {% binopRE Rem $1 $3 }
+  | simple_expression '**' simple_expression   {% binopRE Pow $1 $3 }
 
-primary :: { Exp }
+primary :: { RichExp }
 primary :
     name
-      { VarE $1 (srclocOf $1) }
+      { ExpR $ VarE $1 (srclocOf $1) }
   | literal
-      { LitE $1 (srclocOf $1) }
-  | aggregate
-      { AggE $1 (srclocOf $1) }
+      { ExpR $ LitE $1 (srclocOf $1) }
   | function_call
-      { let { (f, args) = $1 }
-        in
-          CallE f args (f `srcspan` args)
-      }
+      { $1 }
   | qualified_expression
-      { QualE $1 (srclocOf $1) }
-{-
+      { ExpR $ QualE $1 (srclocOf $1) }
   | type_conversion
       { $1 }
--}
   | allocator
-      { $1 }
-  | '(' expression ')'
-      { $2 }
+      { ExpR $1 }
+  | subtype_indication
+      { SubtypeR $1 }
+{-
+  | 'open'
+      { OpenR (srclocOf $1) }
+-}
+  | '(' expression_rlist ')'
+      { ParensR (rev $2) }
   | ANTI_EXP
-      { AntiExp (getANTI_EXP $1) (srclocOf $1) }
+      { ExpR $ AntiExp (getANTI_EXP $1) (srclocOf $1) }
+
+expression_rlist :: { RevList RichExp }
+expression_rlist :
+    expression
+      { rsingleton $1 }
+  | 'inertial' expression
+      {% do { e <- checkExp  $2
+            ; pure $ rsingleton $ InertialR e ($1 `srcspan` $2)
+            }
+      }
+  | ANTI_LITS
+      { rsingleton $ AntiLitsR (getANTI_LITS $1) (srclocOf $1) }
+  | ANTI_EXPS
+      { rsingleton $ AntiExpsR (getANTI_EXPS $1) (srclocOf $1) }
+  | expression '=>' expression
+      { rsingleton $ AssocR $1 $3 ($1 `srcspan` $3) }
+  | expression_rlist ',' expression
+     { rcons $3 $1 }
 
 {-
 [§ 9.3.2]
@@ -2575,36 +2588,7 @@ choice ::=
 
 aggregate :: { [ElemAssoc] }
 aggregate :
-   '(' element_associations ')' { rev $2 }
-
-element_associations :: { RevList ElemAssoc }
-element_associations :
-    element_association
-      { rsingleton $1 }
-  | element_associations ',' element_association
-      { rcons $3 $1 }
-  | element_associations ',' error
-      {% expected ["element association"] Nothing }
-
-element_association :: { ElemAssoc }
-element_association :
-    expression
-      { ElemAssoc [] $1 (srclocOf $1) }
-  | choices '=>' expression
-      { ElemAssoc (rev $1) $3 ($1 `srcspan` $3) }
-  | ANTI_LITS
-      { AntiExpsElemAssoc (getANTI_LITS $1) (srclocOf $1) }
-  | ANTI_EXPS
-      { AntiLitsElemAssoc (getANTI_EXPS $1) (srclocOf $1) }
-
-choices :: { RevList Choice }
-choices :
-    choice             { rsingleton $1 }
-  | choices '|' choice { rcons $3 $1 }
-
-choice :: { Choice }
-choice :
-    expression { ExpC $1 (srclocOf $1) }
+   '(' expression_rlist ')' {% checkAggregate (ParensR (rev $2)) }
 
 {-
 [§ 9.3.4]
@@ -2615,10 +2599,9 @@ function_call ::=
 actual_parameter_part ::= parameter_association_list
 -}
 
-function_call :: { (Name, [AssocElem]) }
+function_call :: { RichExp }
 function_call :
-    fun_name                               { ($1, []) }
-  | fun_name '(' actual_parameter_part ')' { ($1, $3) }
+  fun_name '(' expression_rlist ')' { CallR $1 (rev $3) ($1 `srcspan` $4) }
 
 actual_parameter_part :: { [AssocElem] }
 actual_parameter_part : association_list { $1 }
@@ -2633,8 +2616,18 @@ qualified_expression ::=
 
 qualified_expression :: { QualExp }
 qualified_expression :
-    type_mark '\'' '(' expression ')' { QualExp $1 $4 ($1 `srcspan` $5) }
-  | type_mark '\'' '(' aggregate ')'  { QualAgg $1 $4 ($1 `srcspan` $5) }
+    type_mark '\'' '(' expression_rlist ')'
+      {% case rev $4 of
+           { [re] ->
+               do { e <- checkExp re
+                  ; pure $ QualExp $1 e ($1 `srcspan` $3)
+                  }
+           ; res ->
+               do { agg <- mapM checkElemAssoc res
+                  ; pure $ QualAgg $1 agg ($1 `srcspan` $3)
+                  }
+           }
+      }
 
 {-
 [§ 9.3.6]
@@ -2642,11 +2635,14 @@ qualified_expression :
 type_conversion ::= type_mark ( expression )
 -}
 
-{-
-type_conversion :: { Exp }
+type_conversion :: { RichExp }
 type_conversion :
-  type_mark '(' expression ')' { CastE $1 $3 ($1 `srcspan` $4) }
--}
+  type_mark '(' expression_rlist ')'
+    {% case rev $3 of
+         { [re] -> pure $ CastR $1 re ($1 `srcspan` $4)
+         ; _    -> parserError $3 $ text "Expected expression"
+         }
+    }
 
 {-
 [§ 9.3.7]
@@ -2659,7 +2655,9 @@ allocator ::=
 allocator :: { Exp }
 allocator :
     'new' subtype_indication   { AllocTyE $2 ($1 `srcspan` $2) }
+{-
   | 'new' qualified_expression { AllocE $2 ($1 `srcspan` $2) }
+-}
 
 {-
 [§ 10.1]
@@ -2743,7 +2741,7 @@ condition_clause :
   | 'until' condition { Just $2 }
 
 condition :: { Exp }
-condition : expression { $1 }
+condition : expression {% checkExp $1 }
 
 timeout_clause :: { Maybe Exp }
 timeout_clause :
@@ -2767,13 +2765,23 @@ assertion_statement :
 
 report_clause :: { Maybe Exp }
 report_clause :
-    {- empty -}         { Nothing }
-  | 'report' expression { Just $2 }
+    {- empty -}
+      { Nothing }
+  | 'report' expression
+     {% do { e <- checkExp $2
+           ; pure $ Just e
+           }
+     }
 
 severity_clause :: { Maybe Exp }
 severity_clause :
-    {- empty -}           { Nothing }
-  | 'severity' expression { Just $2 }
+    {- empty -}
+      { Nothing }
+  | 'severity' expression
+     {% do { e <- checkExp $2
+           ; pure $ Just e
+           }
+     }
 
 
 {-
@@ -2786,7 +2794,10 @@ report_statement ::=
 
 report_statement :
     'report' expression severity_clause ';'
-      { ReportS $2 $3 ($1 `srcspan` $4) }
+      {% do { e <- checkExp $2
+            ; pure $ ReportS e $3 ($1 `srcspan` $4)
+            }
+      }
 
 {-
 [§ 10.5]
@@ -2852,7 +2863,10 @@ simple_waveform_assignment :
 simple_force_assignment :: { Stm }
 simple_force_assignment :
     target '<=' 'force' force_mode_clause expression ';'
-      { SigAssnS $1 (ForceRhs $4 $5 ($3 `srcspan` $5)) ($1 `srcspan` $6) }
+      {% do { e <- checkExp $5
+            ; pure $ SigAssnS $1 (ForceRhs $4 e ($3 `srcspan` $5)) ($1 `srcspan` $6)
+            }
+      }
 
 simple_release_assignment :: { Stm }
 simple_release_assignment :
@@ -2888,18 +2902,33 @@ waveform_elements :
 
 waveform_element :: { Wave }
 waveform_element :
-    expression after_clause { Wave (Just $1) $2 ($1 `srcspan` $2) }
-  | 'null' after_clause     { Wave Nothing $2 ($1 `srcspan` $2) }
+    expression after_clause
+      {% do { e <- checkExp $1
+            ; pure $ Wave (Just e) $2 ($1 `srcspan` $2)
+            }
+      }
+  | 'null' after_clause
+      { Wave Nothing $2 ($1 `srcspan` $2) }
 
 reject_clause :: { Maybe Exp }
 reject_clause :
-    {- empty -}         { Nothing }
-  | 'reject' expression { Just $2 }
+    {- empty -}
+      { Nothing }
+  | 'reject' expression
+      {% do { e <- checkExp $2
+            ; return $ Just e
+            }
+      }
 
 after_clause :: { Maybe Exp }
 after_clause :
-    {- empty -}        { Nothing }
-  | 'after' expression { Just $2 }
+    {- empty -}
+      { Nothing }
+  | 'after' expression
+      {% do { e <- checkExp $2
+            ; return $ Just e
+            }
+      }
 
 {-
 [§ 10.5.3]
@@ -2951,9 +2980,16 @@ conditional_force_assignment :
 conditional_expressions :: { Conditional Exp }
 conditional_expressions :
     expression 'when' condition
-      { Conditional [($1, $3)] Nothing ($1 `srcspan` $3)}
+      {% do { e <- checkExp $1
+            ; pure $ Conditional [(e, $3)] Nothing ($1 `srcspan` $3)
+            }
+      }
   | expression 'when' condition 'else' expression
-      { Conditional [($1, $3)] (Just $5) ($1 `srcspan` $5)}
+      {% do { e1 <- checkExp $1
+            ; e2 <- checkExp $5
+            ; pure $ Conditional [(e1, $3)] (Just e2) ($1 `srcspan` $5)
+            }
+      }
 
 {-
 [§ 10.5.4]
@@ -2988,7 +3024,10 @@ selected_waveform_assignment :: { Stm }
 selected_waveform_assignment :
     'with' expression 'select' match_opt
       target '<=' delay_mechanism_clause selected_waveforms ';'
-    { SigAssnS $5 (SelWaveRhs $2 $4 $7 $8 ($7 `srcspan` $8)) ($1 `srcspan` $9) }
+    {% do { e <- checkExp $2
+          ; pure $ SigAssnS $5 (SelWaveRhs e $4 $7 $8 ($7 `srcspan` $8)) ($1 `srcspan` $9)
+          }
+    }
 
 selected_waveforms :: { Selected Waveform }
 selected_waveforms :
@@ -2996,16 +3035,25 @@ selected_waveforms :
 
 selected_waveforms_ :: { RevList (L (Waveform, Choices)) }
 selected_waveforms_ :
-    waveform 'when' choices
-      { rsingleton (L ($1 <--> $3) ($1, rev $3)) }
-  | selected_waveforms_ ',' waveform 'when' choices
-      { rcons (L ($3 <--> $5) ($3, rev $5)) $1 }
+    waveform 'when' expression
+      {% do { cs <- checkChoices $3
+            ; pure $ rsingleton (L ($1 <--> $3) ($1, cs))
+            }
+      }
+  | selected_waveforms_ ',' waveform 'when' expression
+      {% do { cs <- checkChoices $5
+            ; pure $ rcons (L ($3 <--> $5) ($3, cs)) $1
+            }
+      }
 
 selected_force_assignment :: { Stm }
 selected_force_assignment :
     'with' expression 'select' match_opt
       target '<=' 'force' force_mode_clause selected_expressions ';'
-    { SigAssnS $5 (SelForceRhs $2 $4 $8 $9 ($7 `srcspan` $9)) ($1 `srcspan` $10) }
+    {% do { e <- checkExp $2
+          ; pure $ SigAssnS $5 (SelForceRhs e $4 $8 $9 ($7 `srcspan` $9)) ($1 `srcspan` $10)
+          }
+    }
 
 selected_expressions :: { Selected Exp }
 selected_expressions :
@@ -3013,10 +3061,18 @@ selected_expressions :
 
 selected_expressions_ :: { RevList (L (Exp, Choices)) }
 selected_expressions_ :
-    expression 'when' choices
-      { rsingleton (L ($1 <--> $3) ($1, rev $3)) }
-  | selected_expressions_ ',' expression 'when' choices
-      { rcons (L ($3 <--> $5) ($3, rev $5)) $1 }
+    expression 'when' expression
+      {% do { e  <- checkExp $1
+            ; cs <- checkChoices $3
+            ; pure $ rsingleton (L ($1 <--> $3) (e, cs))
+            }
+      }
+  | selected_expressions_ ',' expression 'when' expression
+       {% do { e  <- checkExp $3
+             ; cs <- checkChoices $5
+             ; pure $ rcons (L ($3 <--> $5) (e, cs)) $1
+             }
+       }
 
 match_opt :: { Bool }
 match_opt :
@@ -3051,7 +3107,10 @@ variable_assignment_statement :
 simple_variable_assignment :: { Stm }
 simple_variable_assignment :
     target ':=' expression ';'
-      { VarAssnS $1 (VarRhs $3 (srclocOf $3)) ($1 `srcspan` $4) }
+      {% do { e <- checkExp $3
+            ; pure $ VarAssnS $1 (VarRhs e (srclocOf $3)) ($1 `srcspan` $4)
+            }
+      }
 
 conditional_variable_assignment :: { Stm }
 conditional_variable_assignment :
@@ -3062,7 +3121,10 @@ selected_variable_assignment :: { Stm }
 selected_variable_assignment :
     'with' expression 'select' match_opt
       target ':=' selected_expressions ';'
-    { VarAssnS $5 (SelRhs $2 $4 $7 (srclocOf $7)) ($1 `srcspan` $8) }
+     {% do { e <- checkExp $2
+           ; pure $ VarAssnS $5 (SelRhs e $4 $7 (srclocOf $7)) ($1 `srcspan` $8)
+           }
+     }
 
 {-
 [§ 10.7]
@@ -3143,7 +3205,10 @@ case_statement :
     'case' match_opt expression 'is'
       case_statement_alternative_rlist
     'end' 'case' match_opt label_opt ';'
-      { CaseS $3 $2 (map unLoc (rev $5)) $9 ($1 `srcspan` $10) }
+      {% do { e <- checkExp $3
+            ; pure $ CaseS e $2 (map unLoc (rev $5)) $9 ($1 `srcspan` $10)
+            }
+      }
 
 case_statement_alternative_rlist :: { RevList (L (Choices, [Stm])) }
 case_statement_alternative_rlist :
@@ -3154,8 +3219,11 @@ case_statement_alternative_rlist :
 
 case_statement_alternative :: { L (Choices, [Stm]) }
 case_statement_alternative :
-    'when' choices '=>' sequence_of_statements
-      { L ($1 <--> $4) (rev $2, $4) }
+    'when' expression '=>' sequence_of_statements
+      {% do { cs <- checkChoices $2
+            ; pure $ L ($1 <--> $4) (cs, $4)
+            }
+      }
 
 {-
 [§ 10.10]
@@ -3225,7 +3293,10 @@ return_statement :
     'return' ';'
       { ReturnS Nothing ($1 `srcspan` $2) }
   | 'return' expression ';'
-      { ReturnS (Just $2) ($1 `srcspan` $3) }
+      {% do { e <- checkExp $2
+            ; pure $ ReturnS (Just e) ($1 `srcspan` $3)
+            }
+      }
 
 {-}
 [§ 10.14]
@@ -3487,10 +3558,18 @@ concurrent_selected_signal_assignment :: { CStm }
 concurrent_selected_signal_assignment :
     'postponed' 'with' expression 'select' match_opt
       target '<=' guarded_opt delay_mechanism_clause selected_waveforms ';'
-        { ConcSigAssnS $6 True $8 $9 (ConcSelRhs $3 $5 $10 ($9 `srcspan` $10)) ($1 `srcspan` $11) }
+        {% do { e <- checkExp $3
+              ; pure $ ConcSigAssnS $6 True $8 $9 (ConcSelRhs e $5 $10 ($9 `srcspan` $10))
+                                    ($1 `srcspan` $11)
+              }
+        }
   | 'with' expression 'select' match_opt
       target '<=' guarded_opt delay_mechanism_clause selected_waveforms ';'
-        { ConcSigAssnS $5 False $7 $8 (ConcSelRhs $2 $4 $9 ($8 `srcspan` $9)) ($1 `srcspan` $10) }
+        {% do { e <- checkExp $2
+              ; pure $ ConcSigAssnS $5 False $7 $8 (ConcSelRhs e $4 $9 ($8 `srcspan` $9))
+                                    ($1 `srcspan` $10)
+              }
+        }
 
 guarded_opt :: { Bool }
 guarded_opt :
@@ -3606,7 +3685,10 @@ case_generate_statement :
     'case' expression 'generate'
       case_generate_alternative_rlist
     'end' 'generate' label_opt ';'
-    { CaseGenS $2 (map unLoc (rev $4)) ($1 `srcspan` $8) }
+    {% do { e <- checkExp $2
+          ; pure $ CaseGenS e (map unLoc (rev $4)) ($1 `srcspan` $8)
+          }
+    }
 
 case_generate_alternative_rlist :: { RevList (L (Choices, GenAlt)) }
 case_generate_alternative_rlist :
@@ -3617,8 +3699,8 @@ case_generate_alternative_rlist :
 
 case_generate_alternative :: { L (Choices, GenAlt) }
 case_generate_alternative :
-  'when' when_choices '=>' generate_statement_body
-    {% do { (lbl, cs) <- checkWhenChoices (rev $2)
+  'when' expression '=>' generate_statement_body
+    {% do { (lbl, cs) <- checkLabeledChoices $2
           ; let alt = GenAlt lbl $4 ($1 `srcspan` $4)
           ; return $ L ($1 <--> $4) (cs, alt)
           }
@@ -3633,16 +3715,6 @@ gen_elsif_rlist :
         in
           rcons (L ($1 <--> $6) ($4, alt)) $1
       }
-
-when_choices :: { RevList (Either Label Choice) }
-when_choices :
-    when_choice             { rsingleton $1 }
-  | when_choices '|' when_choice { rcons $3 $1 }
-
-when_choice :: { Either Label Choice }
-when_choice :
-    label ':' { Left $1 }
-  | choice    { Right $1 }
 
 gen_else_opt :: { Maybe GenAlt }
 gen_else_opt :
@@ -3956,6 +4028,12 @@ unopE op e = UnopE op e (srclocOf e)
 binopE :: Binop -> Exp -> Exp -> Exp
 binopE op e1 e2 = BinopE op e1 e2 (e1 `srcspan` e2)
 
+unopRE :: Unop -> RichExp -> P RichExp
+unopRE op e = ExpR <$> (unopE op <$> checkExp e)
+
+binopRE :: Binop -> RichExp -> RichExp -> P RichExp
+binopRE op e1 e2 = ExpR <$> (binopE op <$> checkExp e1 <*> checkExp e2)
+
 setPrefix :: RevList Id -> P (RevList Id)
 setPrefix pfx = do
     putPrefix (rev pfx)
@@ -3971,48 +4049,152 @@ mkOperator loc s = Operator (intern s) (srclocOf loc)
 mkName :: [Id] -> BaseName -> Name
 mkName pfx n = Name pfx n (pfx `srcspan` n)
 
-type WhenChoice = Either Label Choice
+-- A 'rich' expression that can represent an expression, choice, or element
+-- association. Used to avoid grammar ambiguity since these forms are ambiguous.
+data RichExp = ExpR Exp
+             | CallR Name [RichExp] SrcLoc
+             | CastR TypeMark RichExp SrcLoc
+             | SubtypeR Subtype
+             | OpenR SrcLoc
+             | ParensR [RichExp]
+             | LabeledR Id RichExp
+             | InertialR Exp SrcLoc
+             | ChoicesR Choices
+             | AssocR RichExp RichExp SrcLoc
+             | AntiLitsR String SrcLoc
+             | AntiExpsR String SrcLoc
+  deriving (Eq, Ord, Show)
 
-type WhenChoices = [WhenChoice]
+instance Pretty RichExp where
+    pprPrec p (ExpR e)           = pprPrec p e
+    pprPrec _ (CallR f args _)   = ppr f <> parens (commasep (map ppr args))
+    pprPrec _ (CastR ty e _)     = ppr ty <> parens (ppr e)
+    pprPrec p (SubtypeR tau)     = pprPrec p tau
+    pprPrec _ OpenR{}            = text "open"
+    pprPrec _ (ParensR res)      = parens (commasep (map ppr res))
+    pprPrec _ (LabeledR l re)    = ppr l <+> colon <+> ppr re
+    pprPrec _ (InertialR e _)    = text "inertial" <+> ppr e
+    pprPrec p (ChoicesR cs)      = pprPrec p cs
+    pprPrec p (AssocR re1 re2 _) = ppr re1 <+> text "=>" <+> ppr re2
+    pprPrec _ (AntiLitsR s _)    = pprAnti "lits" s
+    pprPrec _ (AntiExpsR s _)    = pprAnti "exps" s
 
-checkWhenChoices :: WhenChoices -> P (Maybe Label, Choices)
-checkWhenChoices wcs = go wcs
-  where
-    go [] =
-        return (Nothing, [])
+instance Located RichExp where
+    locOf (ExpR e)         = locOf e
+    locOf (CallR _ _ l)    = locOf l
+    locOf (CastR _ _ l)    = locOf l
+    locOf (SubtypeR tau)   = locOf tau
+    locOf (OpenR l)        = locOf l
+    locOf (ParensR res)    = locOf res
+    locOf (LabeledR l re)  = l <--> re
+    locOf (InertialR re l) = locOf l
+    locOf (ChoicesR cs)    = locOf cs
+    locOf (AssocR _ _ l)   = locOf l
+    locOf (AntiLitsR _ l)  = locOf l
+    locOf (AntiExpsR _ l)  = locOf l
 
-    go (Left lbl : wcs) = do
-        cs <- check wcs
-        return (Just lbl, cs)
+checkIdentifier :: Name -> P Id
+checkIdentifier (Name [] (IdN ident _) _) = pure ident
+checkIdentifier re =
+    parserError re $ text "Expected identifier but got" <+> ppr re
 
-    go wcs = do
-        cs <- check wcs
-        return (Nothing, cs)
+checkExp :: RichExp -> P Exp
+checkExp (ExpR e)         = pure e
+checkExp (CallR f args l) = CallE f <$> mapM checkArg args <*> pure l
+checkExp (CastR ty re l)  = CastE ty <$> checkExp re <*> pure l
+checkExp (ParensR [re])   = checkExp re
+checkExp re               = AggE <$> checkAggregate re <*> pure (srclocOf re)
 
-    check :: WhenChoices -> P Choices
-    check [] =
-        return []
+checkAggregate :: RichExp -> P [ElemAssoc]
+checkAggregate (ParensR res) =
+    mapM checkElemAssoc res
 
-    check (Left lbl : _) =
-        parserError lbl $
-        text "Expected choice but got label" <+>
-        squotes (ppr lbl) <>
-        dot
+checkAggregate (AntiLitsR s l) =
+    pure [AntiLitsElemAssoc s l]
 
-    check (Right c: wcs) =
-        (c :) <$> check wcs
+checkAggregate (AntiExpsR s l) =
+    pure [AntiExpsElemAssoc s l]
 
-checkFormalPart :: ActualPart -> P FormalPart
+checkAggregate re =
+    parserError re $ text "Expected aggregate but got" <+> ppr re
+
+checkElemAssoc :: RichExp -> P ElemAssoc
+checkElemAssoc (AssocR re1 re2 l) =
+    ElemAssoc <$> checkChoices re1 <*> checkExp re2 <*> pure l
+
+checkElemAssoc (AntiLitsR s l) =
+    pure $ AntiLitsElemAssoc s l
+
+checkElemAssoc (AntiExpsR s l) =
+    pure $ AntiExpsElemAssoc s l
+
+checkElemAssoc re =
+    ElemAssoc [] <$> checkExp re <*> pure (srclocOf re)
+
+checkLabeledChoices :: RichExp -> P (Maybe Id, Choices)
+checkLabeledChoices (LabeledR l re) = (,) <$> pure (Just l) <*> checkChoices re
+checkLabeledChoices re              = (,) <$> pure Nothing <*> checkChoices re
+checkLabeledChoices re =
+    parserError re $ text "Expected labeled expression but got" <+> ppr re
+
+checkChoice :: RichExp -> P Choice
+checkChoice (ExpR e) = pure $ ExpC e (srclocOf e)
+checkChoice re =
+    parserError re $ text "Expected choice but got" <+> ppr re
+
+checkChoices :: RichExp -> P [Choice]
+checkChoices (ChoicesR cs) = pure cs
+checkChoices re            = (:) <$> checkChoice re <*> pure []
+checkChoices re =
+    parserError re $ text "Expected choices but got" <+> ppr re
+
+checkArg :: RichExp -> P Arg
+checkArg (AssocR re1 re2 l) = do
+    f <- checkFormalPart re1
+    a <- checkActualPart re2
+    pure $ AssocElem (Just f) a l
+
+checkArg re = do
+    a <- checkActualPart re
+    pure $ AssocElem Nothing a (srclocOf re)
+
+checkFormalPart :: RichExp -> P FormalPart
 checkFormalPart = go
   where
-    go :: ActualPart -> P FormalPart
-    go (Part x loc)        = Part <$> check x <*> pure loc
-    go (FunPart f x loc)   = FunPart f <$> check x <*> pure loc
-    go (TypePart ty x loc) = TypePart ty <$> check x <*> pure loc
+    go :: RichExp -> P FormalPart
+    go (CallR f [re] l) = FunPart f <$> checkName re <*> pure l
+    go (CastR ty re l)  = TypePart ty <$> checkName re <*> pure l
+    go re               = Part <$> checkName re <*> pure (srclocOf re)
 
-    check :: ActualDesignator -> P Name
-    check (NameA n _) = return n
-    check x           = parserError x $ text "Expected name but got" <+> ppr x
+    checkName :: RichExp -> P Name
+    checkName (ExpR (VarE name _)) = pure name
+    checkName re =
+        parserError re $ text "Expected name but got" <+> ppr re
+
+checkActualPart :: RichExp -> P ActualPart
+checkActualPart = go
+  where
+    go :: RichExp -> P ActualPart
+    go (CallR f [re] l) = FunPart f <$> checkDesignator re <*> pure l
+    go (CastR ty re l)  = TypePart ty <$> checkDesignator re <*> pure l
+    go re               = Part <$> checkDesignator re <*> pure (srclocOf re)
+
+    checkDesignator :: RichExp -> P ActualDesignator
+    checkDesignator (ExpR (VarE name _)) =
+        pure $ NameA name (srclocOf name)
+
+    checkDesignator (InertialR e l) =
+        pure $ ExpA True e l
+
+    checkDesignator (SubtypeR ty) =
+        pure $ SubtypeA ty (srclocOf ty)
+
+    checkDesignator (OpenR l) =
+        pure $ OpenA l
+
+    checkDesignator re = do
+        e <- checkExp re
+        pure $ ExpA False e (srclocOf re)
 
 lexer :: (L T.Token -> P a) -> P a
 lexer cont = do

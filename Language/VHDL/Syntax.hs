@@ -1731,7 +1731,7 @@ data Exp = VarE Name !SrcLoc
          | UnopE Unop Exp !SrcLoc
          | BinopE Binop Exp Exp !SrcLoc
          | AggE Aggregate !SrcLoc
-         | CallE Name [Param] !SrcLoc
+         | CallE Name [Arg] !SrcLoc
          | QualE QualExp !SrcLoc
          | CastE TypeMark Exp !SrcLoc
          | AllocTyE Subtype !SrcLoc
@@ -2036,7 +2036,7 @@ function_call ::=
 actual_parameter_part ::= parameter_association_list
 -}
 
-type Param = AssocElem
+type Arg = AssocElem
 
 {-
 [§ 9.3.5]
@@ -2098,7 +2098,7 @@ data Stm = LabelS Label Stm !SrcLoc
          | ReportS Exp (Maybe Exp) !SrcLoc
          | SigAssnS Target SignalRhs !SrcLoc
          | VarAssnS Target VarRhs !SrcLoc
-         | CallS Name [Param] !SrcLoc
+         | CallS Name [Arg] !SrcLoc
          | IfS [(Cond, [Stm])] (Maybe [Stm]) (Maybe Label) !SrcLoc
          | CaseS Exp Bool [(Choices, [Stm])] (Maybe Label) !SrcLoc
          | WhileS Cond [Stm] (Maybe Label) !SrcLoc
@@ -2534,7 +2534,7 @@ concurrent_statement ::=
 
 data CStm = BlockS (Maybe Cond) (Maybe GenHeader) (Maybe PortHeader) [Decl] [CStm] !SrcLoc
           | ProcessS Bool (Maybe ProcessSensitivityList) [Decl] [Stm] !SrcLoc
-          | ConcCallS Bool Name [Param] !SrcLoc
+          | ConcCallS Bool Name [Arg] !SrcLoc
           | ConcAssertS Bool Cond (Maybe Exp) (Maybe Exp) !SrcLoc
           | ConcSigAssnS Target Bool Bool (Maybe DelayMechanism) ConcSignalRhs !SrcLoc
           | InstS InstUnit (Maybe GenericMapAspect) (Maybe PortMapAspect) !SrcLoc
