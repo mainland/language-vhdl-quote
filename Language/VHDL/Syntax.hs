@@ -2163,15 +2163,15 @@ instance Pretty Stm where
       where
         go :: VarRhs -> Doc
         go (VarRhs e _) =
-            ppr t <+> text "<=" <+> ppr e
+            ppr t <+> text ":=" <+> ppr e
 
         go (CondRhs cond_es _) =
-            ppr t <+> text "<=" <+> ppr cond_es
+            ppr t <+> text ":=" <+> ppr cond_es
 
         go (SelRhs e isMatch sel_es _) =
             nest 2 $
             text "with" <+> ppr e <+> text "select" <+> if isMatch then char '?' else empty <+/>
-            ppr t <+> text "<=" <+> ppr sel_es
+            ppr t <+> text ":=" <+> ppr sel_es
 
     ppr (CallS f params _) =
         ppr f <+> parens (commasep (map ppr params))
