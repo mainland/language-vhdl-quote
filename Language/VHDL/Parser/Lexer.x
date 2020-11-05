@@ -84,7 +84,7 @@ $basic_char    = [$basic_graphic]
 
 @exponent = [eE] [\-\+]? @integer
 
-@char   = '\'' . '\''
+@char   = \' $graphic \'
 @string = \" ($graphic # [\"] | \"\")* \" -- "
 
 @base      = "B" | "O" | "X" | "UB" | "UO" | "UX" | "SB" | "SO" | "SX" | "D"
@@ -443,17 +443,15 @@ digitsToInteger base ds = go 0 ds
     go !i (d:ds) = go (i*base+d) ds
 
 lexCharLit :: Action P Token
-lexCharLit beg cur = do
-    c   <- nextChar >>= lexChar
-    end <- getInput
-    return $ locateTok beg end (TcharLit (inputString beg end, c))
+lexCharLit beg end = do
+    let raw :: String
+        raw = inputString beg end
+        c :: Char
+        c = lexChar raw
+    return $ locateTok beg end (TcharLit (raw, c))
   where
-    lexChar :: Char -> P Char
-    lexChar c = do
-        c' <- nextChar
-        when (c' /= '\'') $
-            illegalCharacterLiteral cur
-        return c
+    lexChar :: String -> Char
+    lexChar ('\'' : c : "'") = c
 
 lexStringLit :: Action P Token
 lexStringLit beg end = do
