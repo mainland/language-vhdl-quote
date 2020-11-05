@@ -527,7 +527,7 @@ formal_parameter_list ::= parameter_interface_list
 -}
 
 subprogram_declaration :: { Decl }
-subprogram_declaration : subprogram_specification { $1 }
+subprogram_declaration : subprogram_specification ';' { $1 }
 
 subprogram_specification :: { Decl }
 subprogram_specification :
@@ -536,67 +536,60 @@ subprogram_specification :
 
 procedure_specification :: { Decl }
 procedure_specification :
-    'procedure' designator ';'
+    'procedure' designator
       {% do { addFunBaseName $2
             ; return $ ProcSpecD $2 Nothing [] ($1 `srcspan` $2)
             }
       }
-  | 'procedure' designator formal_parameter_list ';'
+  | 'procedure' designator formal_parameter_list
       {% do { addFunBaseName $2
             ; return $ ProcSpecD $2 Nothing $3 ($1 `srcspan` $3)
             }
       }
-  | 'procedure' designator subprogram_header ';'
+  | 'procedure' designator subprogram_header
       {% do { addFunBaseName $2
             ; return $ ProcSpecD $2 (Just $3) [] ($1 `srcspan` $3)
             }
       }
-  | 'procedure' designator subprogram_header formal_parameter_list ';'
+  | 'procedure' designator subprogram_header formal_parameter_list
       {% do { addFunBaseName $2
             ; return $ ProcSpecD $2 (Just $3) $4 ($1 `srcspan` $4)
             }
       }
 
+function_specification_prefix :: { FunSpecP }
+function_specification_prefix :
+    'function' designator
+      {% do { addFunBaseName $2
+            ; return $ FunSpecP $2 Nothing Nothing ($1 `srcspan` $2)
+            }
+      }
+  | purity 'function' designator
+      {% do { addFunBaseName $3
+            ; return $ FunSpecP $3 (Just $1) Nothing ($1 `srcspan` $3)
+            }
+      }
+  | 'function' designator subprogram_header
+      {% do { addFunBaseName $2
+            ; return $ FunSpecP $2 Nothing (Just $3) ($1 `srcspan` $3)
+            }
+      }
+  | purity 'function' designator subprogram_header
+      {% do { addFunBaseName $3
+            ; return $ FunSpecP $3 (Just $1) (Just $4) ($1 `srcspan` $4)
+            }
+      }
+
 function_specification :: { Decl }
 function_specification :
-    'function' designator 'return' type_mark ';'
-      {% do { addFunBaseName $2
-            ; return $ FunSpecD $2 Nothing Nothing [] $4 ($1 `srcspan` $4)
+    function_specification_prefix 'return' type_mark
+      {% do { let FunSpecP name purity subprog _ = $1
+            ; return $ FunSpecD name purity subprog [] $3 ($1 `srcspan` $3)
             }
       }
-  | purity 'function' designator 'return' type_mark ';'
-      {% do { addFunBaseName $3
-            ; return $ FunSpecD $3 (Just $1) Nothing [] $5 ($1 `srcspan` $5)
-            }
-      }
-  | 'function' designator formal_parameter_list 'return' type_mark ';'
-      {% do { addFunBaseName $2
-            ; return $ FunSpecD $2 Nothing Nothing $3 $5 ($1 `srcspan` $5)
-            }
-      }
-  | purity 'function' designator formal_parameter_list 'return' type_mark ';'
-      {% do { addFunBaseName $3
-            ; return $ FunSpecD $3 (Just $1) Nothing $4 $6 ($1 `srcspan` $6)
-            }
-      }
-  | 'function' designator subprogram_header 'return' type_mark ';'
-      {% do { addFunBaseName $2
-            ; return $ FunSpecD $2 Nothing  (Just $3) [] $5 ($1 `srcspan` $5)
-            }
-      }
-  | purity 'function' designator subprogram_header 'return' type_mark ';'
-      {% do { addFunBaseName $3
-            ; return $ FunSpecD $3 (Just $1) (Just $4) [] $6 ($1 `srcspan` $6)
-            }
-      }
-  | 'function' designator subprogram_header formal_parameter_list 'return' type_mark ';'
-      {% do { addFunBaseName $2
-            ; return $ FunSpecD $2 Nothing (Just $3) $4 $6 ($1 `srcspan` $6)
-            }
-      }
-  | purity 'function' designator subprogram_header formal_parameter_list 'return' type_mark ';'
-      {% do { addFunBaseName $3
-            ; return $ FunSpecD $3 (Just $1) (Just $4) $5 $7 ($1 `srcspan` $7)
+  | function_specification_prefix formal_parameter_list 'return' type_mark
+      {% do { let FunSpecP name purity subprog _ = $1
+            ; return $ FunSpecD name purity subprog $2 $4 ($1 `srcspan` $4)
             }
       }
 
@@ -708,9 +701,9 @@ subprogram_instantiation_declaration ::=
 
 subprogram_instantiation_declaration :: { Decl }
 subprogram_instantiation_declaration :
-    'procedure' designator 'is' 'new' name signature_opt generic_map_aspect_opt ';'
-      {% do { addFunBaseName $2
-            ; return $ ProcInstD $2 $5 $6 $7 ($1 `srcspan` $8)
+    subprogram_specification 'is' 'new' name signature_opt generic_map_aspect_opt ';'
+      {% do {f <- checkProcInst $1
+            ; return $ f $4 $5 $6 $($1 `srcspan` $7)
             }
       }
   | 'function' designator 'is' 'new' name signature_opt generic_map_aspect_opt ';'
@@ -1697,7 +1690,7 @@ interface_function_specification :
 
 interface_subprogram_default :: { Maybe InterfaceSubprogramDefault }
 interface_subprogram_default :
-    {- emnpty -} { Nothing }
+    {- empty -} { Nothing }
   | 'is' name { Just (SubprogramD $2 (srclocOf $2)) }
   | 'is' '<>' { Just (AllD ($2 `srcspan` $2)) }
 
@@ -4197,6 +4190,22 @@ checkActualPart = go
     checkDesignator re = do
         e <- checkExp re
         pure $ ExpA False e (srclocOf re)
+
+type FunProcInst = Name -> Maybe Sig -> Maybe GenericMapAspect -> SrcLoc -> Decl
+
+checkProcInst :: Decl -> P FunProcInst
+checkProcInst (ProcSpecD base Nothing [] l) =
+    pure $ \name sig gmap l' -> ProcInstD base name sig gmap (l `srcspan` l')
+
+checkFunProcInst decl =
+    parserError decl $
+    text "Expected procedure base name but got" <+> ppr decl
+
+data FunSpecP = FunSpecP BaseName (Maybe Purity) (Maybe SubprogramHeader) !SrcLoc
+  deriving (Eq, Ord, Show)
+
+instance Located FunSpecP where
+    locOf (FunSpecP _ _ _ l) = locOf l
 
 lexer :: (L T.Token -> P a) -> P a
 lexer cont = do
