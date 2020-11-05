@@ -616,6 +616,8 @@ designator :: { BaseName }
 designator :
     identifier
       { IdN $1 (srclocOf $1) }
+  | fun_identifier
+      { IdN $1 (srclocOf $1) }
   | operator_symbol
       { OpN $1 (srclocOf $1) }
 
