@@ -2,6 +2,7 @@
 
 {
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -w #-}
 
 -- |
@@ -33,6 +34,7 @@ import Data.Symbol
 import Text.PrettyPrint.Mainland
 import Text.PrettyPrint.Mainland.Class
 
+import Language.VHDL.Parser.Exceptions
 import Language.VHDL.Parser.Lexer
 import Language.VHDL.Parser.Monad
 import qualified Language.VHDL.Parser.Tokens as T
@@ -463,18 +465,8 @@ block_specification :
 
 generate_specification :: { GenSpec }
 generate_specification :
-    discrete_range
-      { RangeG $1 (srclocOf $1) }
-  | expression
-      {% case $1 of
-           { ExpR (VarE (Name [] (IdN ident _) _) _) ->
-               pure $ AltG ident (srclocOf $1)
-           ; _ ->
-               do { e <- checkExp $1
-                  ; pure $ ExpG e (srclocOf e)
-                  }
-           }
-      }
+  expression
+    {% checkGenerateSpec $1 }
 
 configuration_item :: { Config }
 configuration_item :
@@ -1049,10 +1041,11 @@ index_subtype_definition_rlist :
 
 array_constraint :: { Constraint }
 array_constraint :
-    index_constraint array_element_constraint_opt
-      { ArrayC $1 $2 ($1 `srcspan` $2) }
-  | '(' 'open' ')' array_element_constraint_opt
-      { ArrayOpenC $4 ($1 `srcspan` $4) }
+    '(' expression_rlist ')' array_element_constraint_opt
+      {% do { f <- checkArrayConstraint (ParensR (rev $2) ($1 `srcspan` $3))
+            ; pure $ f $4 ($1 `srcspan` $4)
+            }
+      }
 
 array_element_constraint :: { Constraint }
 array_element_constraint : element_constraint { $1 }
@@ -1064,19 +1057,13 @@ array_element_constraint_opt :
 
 index_constraint :: { IndexConstraint }
 index_constraint :
-    '(' discrete_range_rlist ')'
-      { IndexConstraint (rev $2) ($1 `srcspan` $3) }
-
-discrete_range_rlist :: { RevList DiscreteRange }
-discrete_range_rlist :
-    discrete_range                          { rsingleton $1 }
-  | discrete_range_rlist ',' discrete_range { rcons $3 $1 }
+    '(' expression_rlist ')'
+      {% checkIndexConstraint (ParensR (rev $2) ($1 `srcspan` $3)) }
 
 discrete_range :: { DiscreteRange }
 discrete_range :
     range              { RangeDR $1 (srclocOf $1) }
--- XXX conflict: We leave out this option since it leads to a reduce/reduce conflict
---  | subtype_indication { SubtypeDR $1 (srclocOf $1) }
+  | subtype_indication { SubtypeDR $1 (srclocOf $1) }
 
 {-
 [§ 5.3.3]
@@ -1361,8 +1348,15 @@ subtype_declaration :
 
 subtype_indication :: { Subtype }
 subtype_indication :
-    type_mark constraint_opt
-      { Subtype Nothing $1 $2 ($1 `srcspan` $2) }
+    type_mark constraint
+      { Subtype Nothing $1 (Just $2) ($1 `srcspan` $2) }
+  | subtype_indication_
+      { $1 }
+
+subtype_indication_ :: { Subtype }
+subtype_indication_ :
+    type_mark
+      { Subtype Nothing $1 Nothing (srclocOf $1) }
   | resolution_indication type_mark constraint_opt
       { Subtype (Just $1) $2 $3 ($1 `srcspan` $3) }
   | ANTI_TYPE
@@ -2244,12 +2238,10 @@ base_name :
           EnumN lit (srclocOf $1)
       }
   | 'arrname' identifier '(' expression_rlist ')'
-      {% do { es <- mapM checkExp (rev $4)
-            ; pure $ IndexedN $2 es ($1 `srcspan` $5)
-            }
+      {% checkArrayIndexOrSlice $2
+                                (ParensR (rev $4) ($3 `srcspan` $5))
+                                ($1 `srcspan` $5)
       }
-  | 'arrname' identifier '(' discrete_range ')'
-      { SliceN $2 $4 ($1 `srcspan` $5) }
 {-
   | identifier signature_opt '\'' attribute_designator attr_arg_opt
       { AttrN $1 $2 $4 $5 ($1 `srcspan` $5) }
@@ -2457,15 +2449,17 @@ expression :
   | expression '?>' expression   {% binopRE GtM $1 $3 }
   | name ':' expression %prec LABEL
       {% do { ident <- checkIdentifier $1
-            ; pure $ LabeledR ident $3
+            ; pure $ LabeledR ident $3 ($1 `srcspan` $3)
             }
       }
   | expression '|' expression
       {% do { cs <- checkChoices $1
             ; c  <- checkChoice $3
-            ; pure $ ChoicesR (c:cs)
+            ; pure $ ChoicesR (c:cs) ($1 `srcspan` $3)
             }
       }
+  | range
+      { RangeR $1 (srclocOf $1) }
 
 simple_expression :: { RichExp }
 simple_expression :
@@ -2499,20 +2493,42 @@ primary :
       { $1 }
   | qualified_expression
       { ExpR $ QualE $1 (srclocOf $1) }
-  | type_conversion
-      { $1 }
+  -- type_conversion
+  -- OR subtype_indication of the following form:
+  -- type_mark array_constraint
+  | type_mark '(' expression_rlist ')'
+      { CastR $1 (ParensR (rev $3) ($2 `srcspan` $4)) ($1 `srcspan` $4) }
   | allocator
       { ExpR $1 }
-  | subtype_indication
-      { SubtypeR $1 }
-{-
-  | 'open'
-      { OpenR (srclocOf $1) }
--}
   | '(' expression_rlist ')'
-      { ParensR (rev $2) }
+      { ParensR (rev $2) ($1 `srcspan` $3) }
   | ANTI_EXP
       { ExpR $ AntiExp (getANTI_EXP $1) (srclocOf $1) }
+  -- subtype_indication
+  | type_mark range_constraint
+      { let { range = RangeC $2 (srclocOf $2) }
+        in
+            SubtypeR (Subtype Nothing $1 (Just range) ($1 `srcspan` $2))
+                     ($1 `srcspan` $2)
+      }
+  | type_mark record_constraint
+      { SubtypeR (Subtype Nothing $1 (Just $2) ($1 `srcspan` $2))
+                 ($1 `srcspan` $2)
+      }
+  | type_mark '(' expression_rlist ')' array_element_constraint
+      {% do { f <- checkArrayConstraint (ParensR (rev $3) ($2 `srcspan` $4))
+            ; pure $ SubtypeR (Subtype Nothing
+                                       $1
+                                       (Just (f (Just $5) ($1 `srcspan` $5)))
+                                       ($1 `srcspan` $5))
+                              ($1 `srcspan` $5)
+            }
+      }
+  | subtype_indication_
+      { SubtypeR $1 (srclocOf $1) }
+  -- Could be an actual_designator or part of an array_constraint
+  | 'open'
+      { OpenR (srclocOf $1) }
 
 expression_rlist :: { RevList RichExp }
 expression_rlist :
@@ -2584,7 +2600,8 @@ choice ::=
 
 aggregate :: { [ElemAssoc] }
 aggregate :
-   '(' expression_rlist ')' {% checkAggregate (ParensR (rev $2)) }
+   '(' expression_rlist ')'
+     {% checkAggregate (ParensR (rev $2) ($1 `srcspan` $3)) }
 
 {-
 [§ 9.3.4]
@@ -2630,15 +2647,6 @@ qualified_expression :
 
 type_conversion ::= type_mark ( expression )
 -}
-
-type_conversion :: { RichExp }
-type_conversion :
-  type_mark '(' expression_rlist ')'
-    {% case rev $3 of
-         { [re] -> pure $ CastR $1 re ($1 `srcspan` $4)
-         ; _    -> parserError $3 $ text "Expected expression"
-         }
-    }
 
 {-
 [§ 9.3.7]
@@ -4052,29 +4060,31 @@ mkName pfx n = Name pfx n (pfx `srcspan` n)
 -- A 'rich' expression that can represent an expression, choice, or element
 -- association. Used to avoid grammar ambiguity since these forms are ambiguous.
 data RichExp = ExpR Exp
-             | CallR Name [RichExp] SrcLoc
-             | CastR TypeMark RichExp SrcLoc
-             | SubtypeR Subtype
-             | OpenR SrcLoc
-             | ParensR [RichExp]
-             | LabeledR Id RichExp
-             | InertialR Exp SrcLoc
-             | ChoicesR Choices
-             | AssocR RichExp RichExp SrcLoc
-             | AntiLitsR String SrcLoc
-             | AntiExpsR String SrcLoc
+             | CallR Name [RichExp] !SrcLoc
+             | CastR TypeMark RichExp !SrcLoc
+             | RangeR Range !SrcLoc
+             | SubtypeR Subtype !SrcLoc
+             | OpenR !SrcLoc
+             | ParensR [RichExp] !SrcLoc
+             | LabeledR Id RichExp !SrcLoc
+             | InertialR Exp !SrcLoc
+             | ChoicesR Choices !SrcLoc
+             | AssocR RichExp RichExp !SrcLoc
+             | AntiLitsR String !SrcLoc
+             | AntiExpsR String !SrcLoc
   deriving (Eq, Ord, Show)
 
 instance Pretty RichExp where
     pprPrec p (ExpR e)           = pprPrec p e
     pprPrec _ (CallR f args _)   = ppr f <> parens (commasep (map ppr args))
-    pprPrec _ (CastR ty e _)     = ppr ty <> parens (ppr e)
-    pprPrec p (SubtypeR tau)     = pprPrec p tau
+    pprPrec _ (CastR ty re _)    = ppr ty <> ppr re
+    pprPrec p (RangeR rng _)     = pprPrec p rng
+    pprPrec p (SubtypeR ty _)    = pprPrec p ty
     pprPrec _ OpenR{}            = text "open"
-    pprPrec _ (ParensR res)      = parens (commasep (map ppr res))
-    pprPrec _ (LabeledR l re)    = ppr l <+> colon <+> ppr re
+    pprPrec _ (ParensR res _)    = parens (commasep (map ppr res))
+    pprPrec _ (LabeledR l re _)  = ppr l <+> colon <+> ppr re
     pprPrec _ (InertialR e _)    = text "inertial" <+> ppr e
-    pprPrec p (ChoicesR cs)      = pprPrec p cs
+    pprPrec p (ChoicesR cs _)    = pprPrec p cs
     pprPrec p (AssocR re1 re2 _) = ppr re1 <+> text "=>" <+> ppr re2
     pprPrec _ (AntiLitsR s _)    = pprAnti "lits" s
     pprPrec _ (AntiExpsR s _)    = pprAnti "exps" s
@@ -4083,12 +4093,13 @@ instance Located RichExp where
     locOf (ExpR e)         = locOf e
     locOf (CallR _ _ l)    = locOf l
     locOf (CastR _ _ l)    = locOf l
-    locOf (SubtypeR tau)   = locOf tau
+    locOf (RangeR _ l)     = locOf l
+    locOf (SubtypeR _ l)   = locOf l
     locOf (OpenR l)        = locOf l
-    locOf (ParensR res)    = locOf res
-    locOf (LabeledR l re)  = l <--> re
-    locOf (InertialR re l) = locOf l
-    locOf (ChoicesR cs)    = locOf cs
+    locOf (ParensR _ l)    = locOf l
+    locOf (LabeledR _ _ l) = locOf l
+    locOf (InertialR _ l)  = locOf l
+    locOf (ChoicesR _ l)   = locOf l
     locOf (AssocR _ _ l)   = locOf l
     locOf (AntiLitsR _ l)  = locOf l
     locOf (AntiExpsR _ l)  = locOf l
@@ -4098,15 +4109,30 @@ checkIdentifier (Name [] (IdN ident _) _) = pure ident
 checkIdentifier re =
     parserError re $ text "Expected identifier but got" <+> ppr re
 
+-- | Check that a RichExp is actually an expression
 checkExp :: RichExp -> P Exp
-checkExp (ExpR e)         = pure e
-checkExp (CallR f args l) = CallE f <$> mapM checkArg args <*> pure l
-checkExp (CastR ty re l)  = CastE ty <$> checkExp re <*> pure l
-checkExp (ParensR [re])   = checkExp re
-checkExp re               = AggE <$> checkAggregate re <*> pure (srclocOf re)
+checkExp (ExpR e) =
+    pure e
 
+-- function_call
+checkExp (CallR f args l) =
+    CallE f <$> mapM checkArg args <*> pure l
+
+-- type_conversion
+checkExp (CastR ty (ParensR [re] _) l) =
+    CastE ty <$> checkExp re <*> pure l
+
+--  ( expression )
+checkExp (ParensR [re] _) =
+    checkExp re
+
+-- aggregate
+checkExp re =
+    AggE <$> checkAggregate re <*> pure (srclocOf re)
+
+-- | Check that a RichExp is actually an aggregate
 checkAggregate :: RichExp -> P [ElemAssoc]
-checkAggregate (ParensR res) =
+checkAggregate (ParensR res _) =
     mapM checkElemAssoc res
 
 checkAggregate (AntiLitsR s l) =
@@ -4132,8 +4158,8 @@ checkElemAssoc re =
     ElemAssoc [] <$> checkExp re <*> pure (srclocOf re)
 
 checkLabeledChoices :: RichExp -> P (Maybe Id, Choices)
-checkLabeledChoices (LabeledR l re) = (,) <$> pure (Just l) <*> checkChoices re
-checkLabeledChoices re              = (,) <$> pure Nothing <*> checkChoices re
+checkLabeledChoices (LabeledR l re _) = (,) <$> pure (Just l) <*> checkChoices re
+checkLabeledChoices re                = (,) <$> pure Nothing <*> checkChoices re
 checkLabeledChoices re =
     parserError re $ text "Expected labeled expression but got" <+> ppr re
 
@@ -4143,8 +4169,8 @@ checkChoice re =
     parserError re $ text "Expected choice but got" <+> ppr re
 
 checkChoices :: RichExp -> P [Choice]
-checkChoices (ChoicesR cs) = pure cs
-checkChoices re            = (:) <$> checkChoice re <*> pure []
+checkChoices (ChoicesR cs _) = pure cs
+checkChoices re              = (:) <$> checkChoice re <*> pure []
 checkChoices re =
     parserError re $ text "Expected choices but got" <+> ppr re
 
@@ -4186,8 +4212,11 @@ checkActualPart = go
     checkDesignator (InertialR e l) =
         pure $ ExpA True e l
 
-    checkDesignator (SubtypeR ty) =
-        pure $ SubtypeA ty (srclocOf ty)
+    checkDesignator re@(CastR _ _ l) =
+        SubtypeA <$> checkSubtypeIndication re <*> pure l
+
+    checkDesignator re@(SubtypeR ty l) =
+        SubtypeA <$> checkSubtypeIndication re <*> pure l
 
     checkDesignator (OpenR l) =
         pure $ OpenA l
@@ -4195,6 +4224,58 @@ checkActualPart = go
     checkDesignator re = do
         e <- checkExp re
         pure $ ExpA False e (srclocOf re)
+
+type ArrayConstraint = Maybe Constraint -> SrcLoc -> Constraint
+
+checkArrayConstraint :: RichExp -> P ArrayConstraint
+checkArrayConstraint (ParensR [OpenR{}] l) =
+    pure $ \c l' -> ArrayOpenC c (l `srcspan` l')
+
+checkArrayConstraint re = do
+    c <- checkIndexConstraint re
+    pure $ \c' l' -> ArrayC c c' (srclocOf re `srcspan` l')
+
+checkIndexConstraint :: RichExp -> P IndexConstraint
+checkIndexConstraint (ParensR res l) =
+    IndexConstraint <$> mapM checkDiscreteRange res <*> pure l
+
+checkIndexConstraint re =
+    parserError re $ text "Expected index constraint but got" <+> ppr re
+
+checkDiscreteRange :: RichExp -> P DiscreteRange
+checkDiscreteRange (RangeR rng l) = pure $ RangeDR rng l
+checkDiscreteRange re             = SubtypeDR <$> checkSubtypeIndication re
+                                              <*> pure (srclocOf re)
+
+checkSubtypeIndication :: RichExp -> P Subtype
+checkSubtypeIndication (CastR ty re l) = do
+    f <- checkArrayConstraint re
+    pure $ Subtype Nothing ty (Just (f Nothing l)) l
+
+checkSubtypeIndication (SubtypeR ty _) =
+    pure ty
+
+checkSubtypeIndication re =
+    parserError re $ text "Expected subtype but got" <+> ppr re
+
+checkArrayIndexOrSlice :: Id -> RichExp -> SrcLoc -> P BaseName
+checkArrayIndexOrSlice ident (ParensR [re] _) l =
+    SliceN ident <$> checkDiscreteRange re <*> pure l
+
+checkArrayIndexOrSlice ident (ParensR res _) l = do
+    es <- mapM checkExp res
+    pure $ IndexedN ident es l
+
+checkArrayIndexOrSlice _ re _ =
+    parserError re $ text "Expected array index but got" <+> ppr re
+
+checkGenerateSpec :: RichExp -> P GenSpec
+checkGenerateSpec (ExpR (VarE (Name [] (IdN ident _) _) l)) =
+    pure $ AltG ident l
+
+checkGenerateSpec re =
+    (RangeG <$> checkDiscreteRange re <*> pure (srclocOf re))
+    `catch` \(_ :: ParserException) -> ExpG <$> checkExp re <*> pure (srclocOf re)
 
 type FunProcInst = Name -> Maybe Sig -> Maybe GenericMapAspect -> SrcLoc -> Decl
 
