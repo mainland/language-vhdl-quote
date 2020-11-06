@@ -16,6 +16,7 @@
 
 module Language.VHDL.Quote (
     ToLit(..),
+    ToId(..),
     ToExp(..),
     ToType(..),
     vtype,
@@ -35,6 +36,7 @@ import Data.Generics (extQ)
 import Data.Loc
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Symbol
 import qualified Data.Text.Lazy as T
 import Data.Typeable (Typeable)
 #ifdef FULL_HASKELL_ANTIQUOTES
@@ -74,6 +76,16 @@ instance ToLit Float where
 
 instance ToLit Double where
     toLit n loc = V.RealLit (show n) (toRational n) loc
+
+-- | An instance of 'ToId' can be converted to a 'V.Id'.
+class ToId a where
+    toId :: a -> SrcLoc -> V.Id
+
+instance ToId V.Id where
+    toId ident _ = ident
+
+instance ToId String where
+    toId ident l = V.Id (V.mkNoCase (intern ident)) l
 
 -- | An instance of 'ToExp' can be converted to a 'V.Exp'.
 class ToExp a where
@@ -200,6 +212,10 @@ qqLitE (V.AntiReal e loc) = Just [|let x = $(antiExpQ e)
 qqLitE (V.AntiLit e loc)  = Just [|toLit $(antiExpQ e) $(qqLocE loc) :: V.Lit|]
 qqLitE _                  = Nothing
 
+qqIdE :: V.Id -> Maybe ExpQ
+qqIdE (V.AntiId e loc) = Just [|toId $(antiExpQ e) $(qqLocE loc) :: V.Id|]
+qqIdE _                = Nothing
+
 qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
@@ -221,6 +237,7 @@ qqElemAssocListE (ini : inis) =
 qqExp :: Typeable a => a -> Maybe ExpQ
 qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqLitE
+                      `extQ` qqIdE
                       `extQ` qqExpE
                       `extQ` qqSubtypeE
                       `extQ` qqElemAssocListE
@@ -243,6 +260,10 @@ qqLitP = go
 
     con n = conP (mkName n)
 
+qqIdP :: V.Id -> Maybe PatQ
+qqIdP (V.AntiId e _) = Just $ antiPatQ e
+qqIdP _              = Nothing
+
 qqExpP :: V.Exp -> Maybe PatQ
 qqExpP (V.AntiExp e _)    = Just $ antiPatQ e
 qqExpP _                  = Nothing
@@ -251,4 +272,5 @@ qqPat :: Typeable a => a -> Maybe PatQ
 qqPat = const Nothing `extQ` qqStringP
                       `extQ` qqLocP
                       `extQ` qqLitP
+                      `extQ` qqIdP
                       `extQ` qqExpP

@@ -125,6 +125,7 @@ instance Located IDecl where
 instance Located Id where
   locOf (Id _ l) = locOf l
   locOf (ExtId _ l) = locOf l
+  locOf (AntiId _ l) = locOf l
 instance Located IfaceGenericMapAspect where
   locOf (IGenericMapAspect _ l) = locOf l
   locOf (IGenericMapAll l) = locOf l

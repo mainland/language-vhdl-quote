@@ -205,6 +205,7 @@ import Language.VHDL.Syntax hiding (L)
   '?>=' { L _ T.Tmatch_ge }
   '?>'  { L _ T.Tmatch_gt }
 
+  ANTI_ID   { L _ T.Tanti_id{} }
   ANTI_EXP  { L _ T.Tanti_exp{} }
   ANTI_EXPS { L _ T.Tanti_exps{} }
   ANTI_INT  { L _ T.Tanti_int{} }
@@ -3867,8 +3868,9 @@ extended_identifier ::= \ graphic_character { graphic_character } \
 
 identifier :: { Id }
 identifier :
-     ID    { mkId  (getID $1)    (srclocOf $1) }
-  |  EXTID { ExtId (getEXTID $1) (srclocOf $1) }
+    ID      { mkId  (getID $1)    (srclocOf $1) }
+  | EXTID   { ExtId (getEXTID $1) (srclocOf $1) }
+  | ANTI_ID { AntiId (getANTI_ID $1) (srclocOf $1) }
 
 type_identifier :: { Id }
 type_identifier :
@@ -3995,6 +3997,9 @@ getBITSTRING (L _ (T.TbitstringLit x)) = x
 
 getOPERATOR :: L T.Token -> (String, String)
 getOPERATOR (L _ (T.Toperator x)) = x
+
+getANTI_ID :: L T.Token -> String
+getANTI_ID (L _ (T.Tanti_id ident)) = ident
 
 getANTI_EXP :: L T.Token -> String
 getANTI_EXP (L _ (T.Tanti_exp e)) = e

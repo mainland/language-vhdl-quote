@@ -2997,15 +2997,17 @@ mkNoCase s = NoCase s ((intern . map toLower . unintern) s)
 
 data Id = Id NoCase !SrcLoc
         | ExtId Symbol !SrcLoc
+        | AntiId String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance IsString Id where
     fromString s = Id (fromString s) noLoc
 
 instance Pretty Id where
-    ppr (Id sym _)    = ppr sym
-    ppr (ExtId sym _) = enclose (char '\\') (char '\\') $
-                        text (unintern sym)
+    ppr (Id sym _)       = ppr sym
+    ppr (ExtId sym _)    = enclose (char '\\') (char '\\') $
+                           text (unintern sym)
+    ppr (AntiId ident _) =  pprAnti "id" ident
 
 {-
 [§ 15.5.1]
