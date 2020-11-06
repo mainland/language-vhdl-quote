@@ -713,12 +713,12 @@ instance Pretty Decl where
 
     ppr (ProcSpecD f hdr params _) =
         text "procedure" <+> ppr f <+> ppr hdr <+>
-        parens (commasep (map ppr params))
+        pprParams params
 
     ppr (FunSpecD f purity hdr params ret_ty _) =
         ppr purity <+>
         text "function" <+> ppr f <+> ppr hdr <+>
-        parens (commasep (map ppr params)) <+>
+        pprParams params <+>
         text "return" <+> ppr ret_ty
 
     ppr (ProcD f hdr params decls stms _) =
@@ -1079,12 +1079,12 @@ instance Pretty IDecl where
       text "type" <+> ppr ident
 
     ppr (ProcID f args n _) =
-      text "procedure" <+> ppr f <> parens (commasep (map ppr args)) <+>
+      text "procedure" <+> ppr f <> pprArgs args <+>
       pprMaybe (text "is") n
 
     ppr (FunID f purity args ty n _) =
       ppr purity <+> text "function" <+>
-      ppr f <> parens (commasep (map ppr args)) <+>
+      ppr f <> pprArgs args <+>
       text "return" <+> ppr ty <+>
       pprMaybe (text "is") n
 
@@ -3048,6 +3048,12 @@ pprAnti anti x = char '$' <> text anti <> colon <> ppr x
 
 elsesep :: [Doc] -> Doc
 elsesep = align . sep . punctuate (text "else")
+
+pprParams :: Pretty a => [a] -> Doc
+pprParams params = parens (semisep (map ppr params))
+
+pprArgs :: Pretty a => [a] -> Doc
+pprArgs = pprParams
 
 pprGuarded :: (Pretty a, Pretty b) => a -> b -> Doc
 pprGuarded a b = ppr a <+> text "when" <+> ppr b
