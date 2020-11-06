@@ -1055,7 +1055,7 @@ instance Pretty IDecl where
       pprMaybe ":=" e
 
     ppr (SignalID idents mode subty kind e _) =
-      text "constant" <+> commasep (map ppr idents) <+>
+      text "signal" <+> commasep (map ppr idents) <+>
       colon <+> ppr mode <+> ppr subty <+>
       ppr kind <+>
       pprMaybe ":=" e
