@@ -56,6 +56,10 @@ expressionTests =
     describe "Expression antiquote tests" $ do
       it "addition expression" $ [vexp|1 + 2|] @?= [vexp|$one + 2|]
       it "and expression" $ [vexp|and 1|] @?= [vexp|and $one|]
+      -- XXX It looks like different quasiquote invocations get fresh instances
+      -- of the symbol table so we have to compare using show
+      it "attribute name" $
+          show [vexp|x'length|] @?= show [vexp|$id:("x")'length|]
       it "declaration" $
         let d1 = [vdecl|entity ROM is
                         port (Addr: in Word;

@@ -134,7 +134,7 @@ vhdl :-
   "*"   { token Tstar }
   "/"   { token Tdiv }
 
-  "''"  { token Tsquote }
+  \'    { token Tsquote }
   "."   { token Tdot }
   ","   { token Tcomma }
   ";"   { token Tsemi }
