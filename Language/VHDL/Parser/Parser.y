@@ -1368,11 +1368,17 @@ element_subtype_indication : subtype_indication { $1 }
 resolution_indication :: { Resolution }
 resolution_indication :
     resolution_function_name   { FunRes $1 (srclocOf $1) }
+-- XXX This causes a conflict with parenthesized expressions resulting from the
+-- discrete_range non-terminal. We will leave this unresolved for now, since
+-- array element resolution is less likely to be used that function calls :)
+{-
   | '(' element_resolution ')' { $2 }
+-}
 
 resolution_function_name :: { Name }
-resolution_function_name : function_name { $1 }
+resolution_function_name : name { $1 }
 
+{-
 element_resolution :: { Resolution }
 element_resolution :
     array_element_resolution { $1 }
@@ -1397,6 +1403,7 @@ record_element_resolution :: { L (Name, Resolution) }
 record_element_resolution :
     record_element_simple_name resolution_indication
       { L ($1 <--> $2) ($1, $2) }
+-}
 
 type_mark :: { TypeMark }
 type_mark : type_name { $1 }
