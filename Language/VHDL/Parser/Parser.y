@@ -1387,7 +1387,7 @@ record_resolution :
       { RecordRes (map unLoc (rev $1)) (srclocOf $1) }
 
 record_element_resolution_rlist :: { RevList (L (Name, Resolution)) }
-type_mark_rlist :
+record_element_resolution_rlist :
     record_element_resolution
       { rsingleton $1 }
   | record_element_resolution_rlist ',' record_element_resolution
