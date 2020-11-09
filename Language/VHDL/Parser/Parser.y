@@ -1371,7 +1371,7 @@ resolution_indication :
   | '(' element_resolution ')' { $2 }
 
 resolution_function_name :: { Name }
-resolution_function_name : fun_name { $1 }
+resolution_function_name : function_name { $1 }
 
 element_resolution :: { Resolution }
 element_resolution :
@@ -2266,15 +2266,15 @@ type_name :
 type_base_name :: { BaseName }
 type_base_name : type_identifier { IdN $1 (srclocOf $1) }
 
-fun_name :: { Name }
-fun_name :
-    fun_base_name
+function_name :: { Name }
+function_name :
+    function_base_name
       { mkName [] $1 }
-  | prefix fun_base_name
+  | prefix function_base_name
       { mkName (rev $1) $2 }
 
-fun_base_name :: { BaseName }
-fun_base_name : fun_identifier { IdN $1 (srclocOf $1) }
+function_base_name :: { BaseName }
+function_base_name : fun_identifier { IdN $1 (srclocOf $1) }
 
 prefix :: { RevList Id }
 prefix :
@@ -2289,9 +2289,6 @@ name_rlist :: { RevList Name }
 name_rlist :
     name                { rsingleton $1 }
   | name_rlist ',' name { rcons $3 $1 }
-
-function_name :: { Name }
-function_name : fun_name { $1 }
 
 verification_unit_name :: { Name }
 verification_unit_name : name { $1 }
@@ -2614,7 +2611,7 @@ actual_parameter_part ::= parameter_association_list
 
 function_call :: { RichExp }
 function_call :
-  fun_name '(' expression_rlist ')' { CallR $1 (rev $3) ($1 `srcspan` $4) }
+  function_name '(' expression_rlist ')' { CallR $1 (rev $3) ($1 `srcspan` $4) }
 
 actual_parameter_part :: { [AssocElem] }
 actual_parameter_part : association_list { $1 }
@@ -3148,8 +3145,8 @@ procedure_call_statement :
 
 procedure_call :: { (Name, [AssocElem]) }
 procedure_call :
-    fun_name                               { ($1, []) }
-  | fun_name '(' actual_parameter_part ')' { ($1, $3) }
+    function_name                               { ($1, []) }
+  | function_name '(' actual_parameter_part ')' { ($1, $3) }
 
 {-
 [§ 10.8]
