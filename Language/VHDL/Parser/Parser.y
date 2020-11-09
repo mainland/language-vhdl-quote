@@ -218,7 +218,6 @@ import Language.VHDL.Syntax hiding (L)
 
 %left DIRECTION
 %left '??'
-%left LABEL
 %left '|'
 %left 'and' 'or' 'nand' 'nor' 'xor' 'xnor'
 %nonassoc 'nand' 'nor'
@@ -228,6 +227,7 @@ import Language.VHDL.Syntax hiding (L)
 %left SIGN
 %left '*' '/' 'mod' 'rem'
 %left '**' 'abs' 'not'
+%left LABEL
 
 --%expect 0
 
@@ -2425,38 +2425,14 @@ only_expression :
 
 expression :: { RichExp }
 expression :
-    simple_expression            { $1 }
-  | '??' primary                 {% unopRE Cond $2 }
-  | expression 'and' expression  {% binopRE And $1 $3 }
-  | expression 'or' expression   {% binopRE Or $1 $3 }
-  | expression 'nand' expression {% binopRE Nand $1 $3 }
-  | expression 'nor' expression  {% binopRE Nor $1 $3 }
-  | expression 'xor' expression  {% binopRE Xor $1 $3 }
-  | expression 'xnor' expression {% binopRE Xnor $1 $3 }
-  | expression 'sll' expression  {% binopRE Sll $1 $3 }
-  | expression 'srl' expression  {% binopRE Srl $1 $3 }
-  | expression 'sla' expression  {% binopRE Sla $1 $3 }
-  | expression 'sra' expression  {% binopRE Sra $1 $3 }
-  | expression 'rol' expression  {% binopRE Rol $1 $3 }
-  | expression 'ror' expression  {% binopRE Ror $1 $3 }
-  | expression '=' expression    {% binopRE Eq $1 $3 }
-  | expression '/=' expression   {% binopRE Ne $1 $3 }
-  | expression '<' expression    {% binopRE Lt $1 $3 }
-  | expression '<=' expression   {% binopRE Le $1 $3 }
-  | expression '>=' expression   {% binopRE Ge $1 $3 }
-  | expression '>' expression    {% binopRE Gt $1 $3 }
-  | expression '?=' expression   {% binopRE EqM $1 $3 }
-  | expression '?/=' expression  {% binopRE NeM $1 $3 }
-  | expression '?<' expression   {% binopRE LtM $1 $3 }
-  | expression '?<=' expression  {% binopRE LeM $1 $3 }
-  | expression '?>=' expression  {% binopRE GeM $1 $3 }
-  | expression '?>' expression   {% binopRE GtM $1 $3 }
+    expression_
+      { $1 }
   | name ':' expression %prec LABEL
       {% do { ident <- checkIdentifier $1
             ; pure $ LabeledR ident $3 ($1 `srcspan` $3)
             }
       }
-  | expression '|' expression
+  | expression '|' expression_
       {% do { cs <- checkChoices $1
             ; c  <- checkChoice $3
             ; pure $ ChoicesR (c:cs) ($1 `srcspan` $3)
@@ -2464,6 +2440,36 @@ expression :
       }
   | range
       { RangeR $1 (srclocOf $1) }
+
+
+expression_ :: { RichExp }
+expression_ :
+    simple_expression              { $1 }
+  | '??' primary                   {% unopRE Cond $2 }
+  | expression_ 'and' expression_  {% binopRE And $1 $3 }
+  | expression_ 'or' expression_   {% binopRE Or $1 $3 }
+  | expression_ 'nand' expression_ {% binopRE Nand $1 $3 }
+  | expression_ 'nor' expression_  {% binopRE Nor $1 $3 }
+  | expression_ 'xor' expression_  {% binopRE Xor $1 $3 }
+  | expression_ 'xnor' expression_ {% binopRE Xnor $1 $3 }
+  | expression_ 'sll' expression_  {% binopRE Sll $1 $3 }
+  | expression_ 'srl' expression_  {% binopRE Srl $1 $3 }
+  | expression_ 'sla' expression_  {% binopRE Sla $1 $3 }
+  | expression_ 'sra' expression_  {% binopRE Sra $1 $3 }
+  | expression_ 'rol' expression_  {% binopRE Rol $1 $3 }
+  | expression_ 'ror' expression_  {% binopRE Ror $1 $3 }
+  | expression_ '=' expression_    {% binopRE Eq $1 $3 }
+  | expression_ '/=' expression_   {% binopRE Ne $1 $3 }
+  | expression_ '<' expression_    {% binopRE Lt $1 $3 }
+  | expression_ '<=' expression_   {% binopRE Le $1 $3 }
+  | expression_ '>=' expression_   {% binopRE Ge $1 $3 }
+  | expression_ '>' expression_    {% binopRE Gt $1 $3 }
+  | expression_ '?=' expression_   {% binopRE EqM $1 $3 }
+  | expression_ '?/=' expression_  {% binopRE NeM $1 $3 }
+  | expression_ '?<' expression_   {% binopRE LtM $1 $3 }
+  | expression_ '?<=' expression_  {% binopRE LeM $1 $3 }
+  | expression_ '?>=' expression_  {% binopRE GeM $1 $3 }
+  | expression_ '?>' expression_   {% binopRE GtM $1 $3 }
 
 simple_expression :: { RichExp }
 simple_expression :
