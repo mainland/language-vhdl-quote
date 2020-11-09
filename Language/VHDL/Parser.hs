@@ -22,7 +22,7 @@ import Control.Monad.Exception
 import Control.Monad.Trans
 import qualified Data.ByteString.Lazy as B
 import Data.Loc
-import Data.Map (Map)
+import Data.Set (Set)
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E
 
@@ -31,35 +31,37 @@ import Language.VHDL.Parser.Monad
 import Language.VHDL.Syntax
 
 parse :: [Extension]
-      -> Map Name NameSpace
+      -> Set Id
       -> P a
       -> T.Text
       -> Maybe Pos
       -> Either SomeException a
-parse exts ns p buf pos =
-    evalP p (emptyPState exts ns buf pos)
+parse exts types p buf pos =
+    evalP p (emptyPState exts types buf pos)
 
 parseFromFile :: [Extension]
-              -> Map Name NameSpace
+              -> Set Id
               -> P a
               -> FilePath
               -> IO a
-parseFromFile exts ns p path = do
+parseFromFile exts types p path = do
     text <- liftIO $ B.readFile path
-    liftException (parse exts ns p (E.decodeLatin1 text) (Just start))
+    liftException (parse exts types p (E.decodeLatin1 text) (Just start))
   where
     start :: Pos
     start = startPos path
 
 parseDesignFile :: [Extension]
-                -> Map Name NameSpace
+                -> Set Id
                 -> T.Text
                 -> Pos
                 -> IO [DesignUnit]
-parseDesignFile exts ns buf pos = liftException $ parse exts ns P.parseDesignFile buf (Just pos)
+parseDesignFile exts types buf pos =
+    liftException $ parse exts types P.parseDesignFile buf (Just pos)
 
 parseDesignFileFromFile :: [Extension]
-                        -> Map Name NameSpace
+                        -> Set Id
                         -> FilePath
                         -> IO [DesignUnit]
-parseDesignFileFromFile exts ns = parseFromFile exts ns P.parseDesignFile
+parseDesignFileFromFile exts types =
+    parseFromFile exts types P.parseDesignFile

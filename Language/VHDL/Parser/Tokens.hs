@@ -34,8 +34,6 @@ data Token = Teof
            | Tident Symbol
            | Text_ident Symbol
            | Ttype_ident Symbol
-           | Tfun_ident Symbol
-           | Tarr_ident Symbol
 
            | Tabs
            | Taccess
@@ -155,8 +153,6 @@ data Token = Teof
 
            -- Keywords unique to quasiquoter
            | Ttypename
-           | Tfunname
-           | Tarrname
 
            | Tplus   -- ^ @+@
            | Tminus  -- ^ @-@
@@ -246,8 +242,6 @@ instance Pretty Token where
     ppr (Tident sym)      = text "identifier" <+> pprSym sym
     ppr (Text_ident sym)  = text "external identifier" <+> pprSym sym
     ppr (Ttype_ident sym) = text "type identifier" <+> pprSym sym
-    ppr (Tfun_ident sym)  = text "function identifier" <+> pprSym sym
-    ppr (Tarr_ident sym)  = text "array identifier" <+> pprSym sym
 
     ppr Tabs                = text "abs"
     ppr Taccess             = text "access"
@@ -366,8 +360,6 @@ instance Pretty Token where
     ppr Txor                = text "xor"
 
     ppr Ttypename = text "typename"
-    ppr Tfunname  = text "funname"
-    ppr Tarrname  = text "arrname"
 
     ppr Tplus   = text "+"
     ppr Tminus  = text "-"

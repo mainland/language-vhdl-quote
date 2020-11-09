@@ -184,7 +184,6 @@ keywords = Map.fromList kws
           , ("and", Tand)
           , ("architecture", Tarchitecture)
           , ("array", Tarray)
-          , ("arrname", Tarrname)
           , ("assert", Tassert)
           , ("assume", Tassume)
           , ("assume_guarantee", Tassume_guarantee)
@@ -213,7 +212,6 @@ keywords = Map.fromList kws
           , ("for", Tfor)
           , ("force", Tforce)
           , ("function", Tfunction)
-          , ("funname", Tfunname)
           , ("generate", Tgenerate)
           , ("generic", Tgeneric)
           , ("group", Tgroup)
@@ -312,12 +310,10 @@ isOperator = (`elem` operators)
 identifier :: Action P Token
 identifier beg end =
     case Map.lookup ident keywords of
-      Nothing  -> do ns <- lookupNamespace (Id (mkNoCase ident) noLoc)
-                     case ns of
-                       TypeN  -> token (Ttype_ident ident) beg end
-                       FunN   -> token (Tfun_ident ident) beg end
-                       ArrN   -> token (Tarr_ident ident) beg end
-                       OtherN -> token (Tident ident) beg end
+      Nothing  -> do istype <- isTypeName (Id (mkNoCase ident) noLoc)
+                     if istype
+                       then token (Ttype_ident ident) beg end
+                       else token (Tident ident) beg end
       Just tok -> token tok beg end
   where
     ident :: Symbol

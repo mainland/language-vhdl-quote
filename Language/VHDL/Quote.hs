@@ -34,9 +34,9 @@ import Control.Monad ((>=>))
 import Data.Data (Data(..))
 import Data.Generics (extQ)
 import Data.Loc
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Symbol
+import Data.Set (Set)
+import qualified Data.Set as Set
+import Data.Symbol ( intern )
 import qualified Data.Text.Lazy as T
 import Data.Typeable (Typeable)
 #ifdef FULL_HASKELL_ANTIQUOTES
@@ -117,20 +117,20 @@ instance ToType V.Subtype where
     toType tau _ = tau
 
 qq :: Data a => P a -> QuasiQuoter
-qq = quasiquote defaultExtensions defaultNamespace
+qq = quasiquote defaultExtensions defaultTypes
   where
     defaultExtensions :: [V.Extension]
     defaultExtensions = []
 
-    defaultNamespace :: Map V.Name V.NameSpace
-    defaultNamespace = Map.fromList
-      [ ("Word", V.TypeN)
-      , ("Bit", V.TypeN)
-      , ("Natural", V.TypeN)
-      , ("std_logic", V.TypeN)
-      , ("std_logic_vector", V.TypeN)
-      , ("sfixed", V.TypeN)
-      , ("ufixed", V.TypeN)
+    defaultTypes :: Set V.Id
+    defaultTypes = Set.fromList
+      [ "Word"
+      , "Bit"
+      , "Natural"
+      , "std_logic"
+      , "std_logic_vector"
+      , "sfixed"
+      , "ufixed"
       ]
 
 vtype :: QuasiQuoter
@@ -162,24 +162,24 @@ vfile = qq P.parseDesignFile
 
 quasiquote :: Data a
            => [V.Extension]
-           -> Map V.Name V.NameSpace
+           -> Set V.Id
            -> P a
            -> QuasiQuoter
-quasiquote exts0 ns0 p0 =
-    QuasiQuoter { quoteExp  = qqparse exts0 ns0 p0 >=> dataToExpQ qqExp
-                , quotePat  = qqparse exts0 ns0 p0 >=> dataToPatQ qqPat
+quasiquote exts0 types0 p0 =
+    QuasiQuoter { quoteExp  = qqparse exts0 types0 p0 >=> dataToExpQ qqExp
+                , quotePat  = qqparse exts0 types0 p0 >=> dataToPatQ qqPat
                 , quoteType = error "VHDL type quasiquoter undefined"
                 , quoteDec  = error "VHDL declaration quasiquoter undefined"
                 }
   where
     qqparse :: [V.Extension]
-            -> Map V.Name V.NameSpace
+            -> Set V.Id
             -> P a
             -> String
             -> Q a
-    qqparse exts ns p s = do
+    qqparse exts types p s = do
         loc <- location
-        case parse (V.Antiquotation : exts) ns p (T.pack s) (Just (locToPos loc)) of
+        case parse (V.Antiquotation : exts) types p (T.pack s) (Just (locToPos loc)) of
           Left err -> fail (show err)
           Right x  -> return x
       where

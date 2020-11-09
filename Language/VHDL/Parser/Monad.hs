@@ -15,8 +15,6 @@ module Language.VHDL.Parser.Monad (
     runP,
     evalP,
 
-    NameSpace(..),
-
     PState,
     emptyPState,
     getInput,
@@ -31,15 +29,8 @@ module Language.VHDL.Parser.Monad (
     useExts,
     antiquotationExt,
 
-    putPrefix,
-    getPrefix,
-
-    addNamespace,
     addTypeName,
-    addFunName,
-    addFunBaseName,
-    addArrName,
-    lookupNamespace,
+    isTypeName,
 
     alexGetCharOrFail,
     maybePeekChar,
@@ -78,15 +69,14 @@ import Data.Bits ((.&.),
 import Data.Int (Int64)
 import Data.List (foldl')
 import Data.Loc
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
 #if !(MIN_VERSION_base(4,9,0))
 import Data.Monoid (Monoid(..), (<>))
 #endif /* !(MIN_VERSION_base(4,9,0)) */
 #if MIN_VERSION_base(4,9,0) && !(MIN_VERSION_base(4,11,0))
 import Data.Semigroup (Semigroup(..))
 #endif
+import Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Data.Text.Lazy as T
 import Data.Word (Word32)
 import Text.PrettyPrint.Mainland
@@ -95,12 +85,8 @@ import Text.PrettyPrint.Mainland.Class
 import Language.VHDL.Parser.Alex
 import Language.VHDL.Parser.Tokens
 import Language.VHDL.Parser.Exceptions
-import Language.VHDL.Syntax (BaseName(..),
-                             Extension(..),
-                             Id,
-                             Name(..),
-                             NameSpace(..),
-                             mkIdName)
+import Language.VHDL.Syntax (Extension(..),
+                             Id)
 
 type Extensions = Word32
 
@@ -110,23 +96,21 @@ data PState = PState
     , curToken   :: L Token
     , lexState   :: ![Int]
     , extensions :: !Extensions
-    , nsPrefix   :: [Id]
-    , nsIdents   :: Map Name NameSpace
+    , typeNames  :: Set Id
     }
 
 emptyPState :: [Extension]
-            -> Map Name NameSpace
+            -> Set Id
             -> T.Text
             -> Maybe Pos
             -> PState
-emptyPState exts ns buf pos = PState
+emptyPState exts typens buf pos = PState
     { input      = alexInput buf pos
     , prevToken  = Nothing
     , curToken   = error "no token"
     , lexState   = [0]
     , extensions = foldl' setBit 0 (map fromEnum exts)
-    , nsPrefix   = []
-    , nsIdents   = ns
+    , typeNames  = typens
     }
 
 newtype P a = P { runP :: PState -> Either SomeException (a, PState) }
@@ -219,39 +203,12 @@ alexGetCharOrFail inp =
       Nothing         -> unexpectedEOF inp
       Just (c, inp')  -> return (c, inp')
 
-putPrefix :: [Id] -> P ()
-putPrefix ids = modify $ \s -> s { nsPrefix = ids }
-
-getPrefix :: P [Id]
-getPrefix = gets nsPrefix
-
-addNamespace :: Map Name NameSpace -> P ()
-addNamespace m = modify $ \s -> s { nsIdents = m `Map.union` nsIdents s }
-
-addName :: Name -> NameSpace -> P ()
-addName n ns = modify $ \s ->
-  s { nsIdents = Map.insert n ns (nsIdents s) }
-
 addTypeName :: Id -> P ()
-addTypeName ident = addName (mkIdName ident) TypeN
+addTypeName n = modify $ \s ->
+  s { typeNames = Set.insert n (typeNames s) }
 
-addFunName :: Id -> P ()
-addFunName ident = addName (mkIdName ident) FunN
-
-addFunBaseName :: BaseName -> P ()
-addFunBaseName (IdN ident _) = addFunName ident
-addFunBaseName _             = return ()
-
-addArrName :: Id -> P ()
-addArrName ident = addName (mkIdName ident) ArrN
-
-lookupNamespace :: Id -> P NameSpace
-lookupNamespace ident = do
-    ids <- getPrefix
-    let n :: Name
-        n = Name ids (IdN ident noLoc) noLoc
-    maybe_ns <- gets $ \s -> Map.lookup n (nsIdents s)
-    return $ fromMaybe OtherN maybe_ns
+isTypeName :: Id -> P Bool
+isTypeName ident =  gets $ \s -> Set.member ident (typeNames s)
 
 maybePeekChar :: P (Maybe Char)
 {-# INLINE maybePeekChar #-}

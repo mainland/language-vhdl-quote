@@ -17,7 +17,6 @@ main = do
     DERIVE(ActualDesignator)
     DERIVE(AssocElem)
     DERIVE(AssocPart ActualDesignator)
-    DERIVE(BaseName)
     DERIVE(BindingIndication)
     DERIVE(CStm)
     DERIVE(Choice)

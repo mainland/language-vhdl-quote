@@ -603,12 +603,12 @@ data Decl = EntityD Id (Maybe GenericClause) (Maybe PortClause) [Decl] [CStm] !S
           | AttrSpecD Name (NameList EntityDesignator) EntityClass Exp !SrcLoc
           | ConfigSpecD ComponentSpec [BindingIndication] !SrcLoc
           | DisconnectSpecD (NameList Name) TypeMark Exp !SrcLoc
-          | ProcSpecD BaseName (Maybe SubprogramHeader) [IDecl] !SrcLoc
-          | FunSpecD BaseName (Maybe Purity) (Maybe SubprogramHeader) [IDecl] TypeMark !SrcLoc
-          | ProcD BaseName (Maybe SubprogramHeader) [IDecl] [Decl] [Stm] !SrcLoc
-          | FunD BaseName (Maybe Purity) (Maybe SubprogramHeader) [IDecl] TypeMark [Decl] [Stm] !SrcLoc
-          | ProcInstD BaseName Name (Maybe Sig) (Maybe GenericMapAspect) !SrcLoc
-          | FunInstD BaseName Name (Maybe Sig) (Maybe GenericMapAspect) !SrcLoc
+          | ProcSpecD Name (Maybe SubprogramHeader) [IDecl] !SrcLoc
+          | FunSpecD Name (Maybe Purity) (Maybe SubprogramHeader) [IDecl] TypeMark !SrcLoc
+          | ProcD Name (Maybe SubprogramHeader) [IDecl] [Decl] [Stm] !SrcLoc
+          | FunD Name (Maybe Purity) (Maybe SubprogramHeader) [IDecl] TypeMark [Decl] [Stm] !SrcLoc
+          | ProcInstD Name Name (Maybe Sig) (Maybe GenericMapAspect) !SrcLoc
+          | FunInstD Name Name (Maybe Sig) (Maybe GenericMapAspect) !SrcLoc
           | PkgD Id (Maybe GenHeader) [Decl] !SrcLoc
           | PkgBodyD Name [Decl] !SrcLoc
           | PkgInstD Id Name (Maybe GenericMapAspect) !SrcLoc
@@ -904,7 +904,7 @@ type TypeMark = Name
 data Constraint = RangeC Range !SrcLoc
                 | ArrayC IndexConstraint (Maybe Constraint) !SrcLoc
                 | ArrayOpenC (Maybe Constraint) !SrcLoc
-                | RecordC [(Name, Constraint)] !SrcLoc
+                | RecordC [(Id, Constraint)] !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty Constraint where
@@ -1043,8 +1043,8 @@ data IDecl = ConstID [Id] Subtype (Maybe Exp) !SrcLoc
            | VarID Bool [Id] Mode Subtype (Maybe Exp) !SrcLoc
            | FileID [Id] Subtype !SrcLoc
            | TypeID Id !SrcLoc
-           | ProcID BaseName [IDecl] (Maybe InterfaceSubprogramDefault) !SrcLoc
-           | FunID BaseName (Maybe Purity) [IDecl] TypeMark (Maybe InterfaceSubprogramDefault) !SrcLoc
+           | ProcID Name [IDecl] (Maybe InterfaceSubprogramDefault) !SrcLoc
+           | FunID Name (Maybe Purity) [IDecl] TypeMark (Maybe InterfaceSubprogramDefault) !SrcLoc
            | PkgInstID Id Name IfaceGenericMapAspect !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
@@ -1546,46 +1546,47 @@ pathname_element ::=
   | package_simple_name
 -}
 
-data NameSpace = TypeN
-               | FunN
-               | ArrN
-               | OtherN
-  deriving (Eq, Ord, Enum, Show, Data, Typeable)
-
-data Name = Name [Id] BaseName !SrcLoc
+data Name = SimpleN [Id] Id !SrcLoc
+          | OpN [Id] Operator !SrcLoc
+          | EnumN [Id] String !SrcLoc
+          | SelN Name Id !SrcLoc
+          | AllN Name !SrcLoc
+          | IndexedN Name [Exp] !SrcLoc
+          | SliceN Name DiscreteRange !SrcLoc
+          | AttrN Name (Maybe Sig) AttrDesignator (Maybe Exp) !SrcLoc
+          | ExtConstN ExtPath Subtype !SrcLoc
+          | ExtSigN ExtPath Subtype !SrcLoc
+          | ExtVarN ExtPath Subtype !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance IsString Name where
-    fromString s = Name [] (fromString s) noLoc
+    fromString s = SimpleN [] (fromString s) noLoc
 
 instance Pretty Name where
-    ppr (Name idents n _) =
-        folddoc (<>) (punctuate dot (map ppr idents ++ [ppr n]))
+    ppr (SimpleN prefix n _) =
+        folddoc (<>) (punctuate dot (map ppr prefix ++ [ppr n]))
 
-data BaseName = IdN Id !SrcLoc
-              | OpN Operator !SrcLoc
-              | EnumN String !SrcLoc
-              | IndexedN Id [Exp] !SrcLoc
-              | SliceN Id DiscreteRange !SrcLoc
-              | AttrN Id (Maybe Sig) AttrDesignator (Maybe Exp) !SrcLoc
-              | AllN !SrcLoc
-              | ExtConstN ExtPath Subtype !SrcLoc
-              | ExtSigN ExtPath Subtype !SrcLoc
-              | ExtVarN ExtPath Subtype !SrcLoc
-  deriving (Eq, Ord, Show, Data, Typeable)
+    ppr (OpN prefix n _) =
+        folddoc (<>) (punctuate dot (map ppr prefix ++ [ppr n]))
 
-instance IsString BaseName where
-    fromString s = IdN (fromString s) noLoc
+    ppr (EnumN prefix n _) =
+        folddoc (<>) (punctuate dot (map ppr prefix ++ [ppr n]))
 
-instance Pretty BaseName where
-    ppr (IdN ident _)               = ppr ident
-    ppr (OpN opsym _)               = ppr opsym
-    ppr (EnumN lit _)               = ppr lit
-    ppr (IndexedN ident es _)       = ppr ident <> parens (commasep (map ppr es))
-    ppr (SliceN ident rng _)        = ppr ident <> parens (ppr rng)
-    ppr (AttrN ident sig desig e _) = ppr ident <> ppr sig <> char '\'' <>
-                                      ppr desig <> maybe empty ppr e
-    ppr AllN{}                      = text "all"
+    ppr (SelN n ele _) =
+        ppr n <> text "." <> ppr ele
+
+    ppr (AllN n _) =
+        ppr n <> text "." <> text "all"
+
+    ppr (IndexedN n es _) =
+        ppr n <> parens (commasep (map ppr es))
+
+    ppr (SliceN n rng _) =
+        ppr n <> parens (ppr rng)
+
+    ppr (AttrN n sig desig e _) =
+        ppr n <> ppr sig <> char '\'' <>
+        ppr desig <> maybe empty ppr e
 
     ppr (ExtConstN path subty _) =
         text "<<" <> text "signal" <+>
@@ -1601,24 +1602,6 @@ instance Pretty BaseName where
         text "<<" <> text "variable" <+>
         ppr path <+> colon <+> ppr subty <>
         text ">>"
-
-    pprList [] =
-        empty
-
-    pprList [n] =
-        ppr n
-
-    pprList (n:ns@(IndexedN{}:_)) =
-        ppr n <> ppr ns
-
-    pprList (n:ns@(SliceN{}:_)) =
-        ppr n <> ppr ns
-
-    pprList (n:ns@(AttrN{}:_)) =
-        ppr n <> ppr ns
-
-    pprList (n:ns) =
-        ppr n <> char '.' <> ppr ns
 
 data NameList a = Some [a] !SrcLoc
                 | Others !SrcLoc
@@ -3009,6 +2992,15 @@ instance Pretty Id where
                            text (unintern sym)
     ppr (AntiId ident _) =  pprAnti "id" ident
 
+    pprList [] =
+        empty
+
+    pprList [n] =
+        ppr n
+
+    pprList (n:ns) =
+        ppr n <> char '.' <> ppr ns
+
 {-
 [§ 15.5.1]
 abstract_literal ::= decimal_literal | based_literal
@@ -3130,8 +3122,6 @@ mkId :: Symbol -> SrcLoc -> Id
 mkId s loc = Id (NoCase s ((intern . map toLower . unintern) s)) loc
 
 mkIdName :: Id -> Name
-mkIdName ident = Name [] (IdN ident l) l
-  where
-    l = srclocOf ident
+mkIdName ident = SimpleN [] ident (srclocOf ident)
 
 #endif /* !defined(ONLY_TYPEDEFS) */

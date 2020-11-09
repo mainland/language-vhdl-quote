@@ -6,8 +6,8 @@ import qualified Data.ByteString.Lazy as B
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy.Encoding as E
 import Data.Loc
-import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Set (Set)
+import qualified Data.Set as Set
 import System.Environment (getArgs)
 import Text.PrettyPrint.Mainland
 import Text.PrettyPrint.Mainland.Class (ppr)
@@ -20,11 +20,11 @@ import qualified Language.VHDL.Syntax as V
 
 import Opts
 
-defaultNamespace :: Map V.Name V.NameSpace
-defaultNamespace = Map.fromList
-  [ ("Word", V.TypeN)
-  , ("Bit", V.TypeN)
-  , ("Natural", V.TypeN)
+defaultTypes :: Set V.Id
+defaultTypes = Set.fromList
+  [ "Word"
+  , "Bit"
+  , "Natural"
   ]
 
 main :: IO ()
@@ -49,7 +49,7 @@ lexFile exts filename = do
       Right ts -> mapM_ print ts
   where
     tokens :: Text -> Either SomeException [L T.Token]
-    tokens text = P.evalP tokensP (P.emptyPState exts defaultNamespace text start)
+    tokens text = P.evalP tokensP (P.emptyPState exts defaultTypes text start)
 
     start :: Maybe Pos
     start = Just $ startPos filename
@@ -64,7 +64,7 @@ lexFile exts filename = do
 parseFile :: [Flag] -> [V.Extension] -> String -> IO ()
 parseFile flags exts filename = do
     text <- E.decodeLatin1 <$> B.readFile filename
-    case P.parse exts defaultNamespace P.parseDesignFile text start of
+    case P.parse exts defaultTypes P.parseDesignFile text start of
       Left err   -> fail $ show err
       Right defs -> if doPrint
                     then if doPragma

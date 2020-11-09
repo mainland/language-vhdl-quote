@@ -45,8 +45,6 @@ import Language.VHDL.Syntax hiding (L)
   ID          { L _ T.Tident{} }
   EXTID       { L _ T.Text_ident{} }
   TYID        { L _ T.Ttype_ident{} }
-  FUNID       { L _ T.Tfun_ident{} }
-  ARRID       { L _ T.Tarr_ident{} }
   INT         { L _ T.TintLit{} }
   REAL        { L _ T.TrealLit{} }
   CHAR        { L _ T.TcharLit{} }
@@ -162,8 +160,6 @@ import Language.VHDL.Syntax hiding (L)
   'xor'           { L _ T.Txor }
 
   'typename' { L _ T.Ttypename }
-  'funname'  { L _ T.Tfunname }
-  'arrname'  { L _ T.Tarrname }
 
   '+'  { L _ T.Tplus }
   '-'  { L _ T.Tminus }
@@ -530,48 +526,24 @@ subprogram_specification :
 procedure_specification :: { Decl }
 procedure_specification :
     'procedure' designator
-      {% do { addFunBaseName $2
-            ; return $ ProcSpecD $2 Nothing [] ($1 `srcspan` $2)
-            }
-      }
+      { ProcSpecD $2 Nothing [] ($1 `srcspan` $2) }
   | 'procedure' designator formal_parameter_list
-      {% do { addFunBaseName $2
-            ; return $ ProcSpecD $2 Nothing $3 ($1 `srcspan` $3)
-            }
-      }
+      { ProcSpecD $2 Nothing $3 ($1 `srcspan` $3) }
   | 'procedure' designator subprogram_header
-      {% do { addFunBaseName $2
-            ; return $ ProcSpecD $2 (Just $3) [] ($1 `srcspan` $3)
-            }
-      }
+      { ProcSpecD $2 (Just $3) [] ($1 `srcspan` $3) }
   | 'procedure' designator subprogram_header formal_parameter_list
-      {% do { addFunBaseName $2
-            ; return $ ProcSpecD $2 (Just $3) $4 ($1 `srcspan` $4)
-            }
-      }
+      { ProcSpecD $2 (Just $3) $4 ($1 `srcspan` $4) }
 
 function_specification_prefix :: { FunSpecP }
 function_specification_prefix :
     'function' designator
-      {% do { addFunBaseName $2
-            ; return $ FunSpecP $2 Nothing Nothing ($1 `srcspan` $2)
-            }
-      }
+      { FunSpecP $2 Nothing Nothing ($1 `srcspan` $2) }
   | purity 'function' designator
-      {% do { addFunBaseName $3
-            ; return $ FunSpecP $3 (Just $1) Nothing ($1 `srcspan` $3)
-            }
-      }
+      { FunSpecP $3 (Just $1) Nothing ($1 `srcspan` $3) }
   | 'function' designator subprogram_header
-      {% do { addFunBaseName $2
-            ; return $ FunSpecP $2 Nothing (Just $3) ($1 `srcspan` $3)
-            }
-      }
+      { FunSpecP $2 Nothing (Just $3) ($1 `srcspan` $3) }
   | purity 'function' designator subprogram_header
-      {% do { addFunBaseName $3
-            ; return $ FunSpecP $3 (Just $1) (Just $4) ($1 `srcspan` $4)
-            }
-      }
+      { FunSpecP $3 (Just $1) (Just $4) ($1 `srcspan` $4) }
 
 function_specification :: { Decl }
 function_specification :
@@ -598,14 +570,12 @@ subprogram_header :
   | 'generic' '(' interface_list ')' generic_map_aspect
       { SubprogramHeader $3 (Just $5) ($1 `srcspan` $5) }
 
-designator :: { BaseName }
+designator :: { Name }
 designator :
     identifier
-      { IdN $1 (srclocOf $1) }
-  | fun_identifier
-      { IdN $1 (srclocOf $1) }
+      { SimpleN [] $1 (srclocOf $1) }
   | operator_symbol
-      { OpN $1 (srclocOf $1) }
+      { OpN [] $1 (srclocOf $1) }
 
 operator_symbol :: { Operator }
 operator_symbol :
@@ -673,7 +643,7 @@ subprogram_body :
         }
     }
 
-designator_opt :: { Maybe BaseName }
+designator_opt :: { Maybe Name }
 designator_opt :
     {- empty -} { Nothing }
   | designator  { Just $1 }
@@ -700,10 +670,7 @@ subprogram_instantiation_declaration :
             }
       }
   | 'function' designator 'is' 'new' name signature_opt generic_map_aspect_opt ';'
-      {% do { addFunBaseName $2
-            ; return $ ProcInstD $2 $5 $6 $7 ($1 `srcspan` $8)
-            }
-      }
+      { ProcInstD $2 $5 $6 $7 ($1 `srcspan` $8) }
 
 {-
 [§ 4.5]
@@ -1039,21 +1006,22 @@ index_subtype_definition_rlist :
   | index_subtype_definition_rlist ',' index_subtype_definition
       { rcons $3 $1 }
 
+{-
 array_constraint :: { Constraint }
 array_constraint :
-    '(' expression_rlist ')' array_element_constraint_opt
-      {% do { f <- checkArrayConstraint (ParensR (rev $2) ($1 `srcspan` $3))
-            ; pure $ f $4 ($1 `srcspan` $4)
-            }
-      }
+  '(' expression_rlist ')' array_element_constraint_opt
+    {% checkArrayConstraint (ParensR (rev $2) ($1 `srcspan` $3)) $4 }
+-}
 
 array_element_constraint :: { Constraint }
 array_element_constraint : element_constraint { $1 }
 
+{-
 array_element_constraint_opt :: { Maybe Constraint }
 array_element_constraint_opt :
     {- empty -}              { Nothing }
   | array_element_constraint { Just $1 }
+-}
 
 index_constraint :: { IndexConstraint }
 index_constraint :
@@ -1113,6 +1081,7 @@ identifier_rlist :
 element_subtype_definition :: { Subtype }
 element_subtype_definition : subtype_indication { $1 }
 
+{-
 record_constraint :: { Constraint }
 record_constraint :
     '(' record_element_constraint_rlist ')'
@@ -1129,6 +1098,7 @@ record_element_constraint :: { L (Name, Constraint) }
 record_element_constraint :
     record_element_simple_name element_constraint
       { L ($1 <--> $2) ($1, $2) }
+-}
 
 {-
 [§ 5.4.1]
@@ -1376,7 +1346,7 @@ resolution_indication :
 -}
 
 resolution_function_name :: { Name }
-resolution_function_name : name { $1 }
+resolution_function_name : function_name { $1 }
 
 {-
 element_resolution :: { Resolution }
@@ -1415,9 +1385,8 @@ type_mark_rlist :
 
 constraint :: { Constraint }
 constraint :
-    range_constraint  { RangeC $1 (srclocOf $1) }
-  | array_constraint  { $1 }
-  | record_constraint { $1 }
+    range_constraint   { RangeC $1 (srclocOf $1) }
+  | element_constraint { $1 }
 
 constraint_opt :: { Maybe Constraint }
 constraint_opt :
@@ -1426,8 +1395,12 @@ constraint_opt :
 
 element_constraint :: { Constraint }
 element_constraint :
-    array_constraint  { $1 }
-  | record_constraint { $1 }
+  -- array_constraint | record_constraint
+    '(' expression_rlist ')'
+      {% checkElementConstraint (ParensR (rev $2) ($1 `srcspan` $3)) }
+  -- array_constraint
+  | '(' expression_rlist ')' array_element_constraint
+      {% checkArrayConstraint (ParensR (rev $2) ($1 `srcspan` $3)) (Just $4) }
 
 {-
 [§ 6.4]
@@ -1657,38 +1630,20 @@ interface_subprogram_declaration :
 interface_procedure_specification :: { IDecl }
 interface_procedure_specification :
     'procedure' designator interface_subprogram_default
-      {% do { addFunBaseName $2
-            ; return $ ProcID $2 [] $3 ($1 `srcspan` $3)
-            }
-      }
+      { ProcID $2 [] $3 ($1 `srcspan` $3) }
   | 'procedure' designator formal_parameter_list interface_subprogram_default
-      {% do { addFunBaseName $2
-            ; return $ ProcID $2 $3 $4 ($1 `srcspan` $4)
-            }
-      }
+      { ProcID $2 $3 $4 ($1 `srcspan` $4) }
 
 interface_function_specification :: { IDecl }
 interface_function_specification :
     'function' designator 'return' type_mark interface_subprogram_default
-      {% do { addFunBaseName $2
-            ; return $ FunID $2 Nothing [] $4 $5 ($1 `srcspan` $5)
-            }
-      }
+      { FunID $2 Nothing [] $4 $5 ($1 `srcspan` $5) }
   | purity 'function' designator 'return' type_mark interface_subprogram_default
-      {% do { addFunBaseName $3
-            ; return $ FunID $3 (Just $1) [] $5 $6 ($1 `srcspan` $6)
-            }
-      }
+      { FunID $3 (Just $1) [] $5 $6 ($1 `srcspan` $6) }
   | 'function' designator formal_parameter_list 'return' type_mark interface_subprogram_default
-      {% do { addFunBaseName $2
-            ; return $ FunID $2 Nothing $3 $5 $6 ($1 `srcspan` $6)
-            }
-      }
+      { FunID $2 Nothing $3 $5 $6 ($1 `srcspan` $6) }
   | purity 'function' designator formal_parameter_list 'return' type_mark interface_subprogram_default
-      {% do { addFunBaseName $3
-            ; return $ FunID $3 (Just $1) $4 $6 $7 ($1 `srcspan` $7)
-            }
-      }
+      { FunID $3 (Just $1) $4 $6 $7 ($1 `srcspan` $7) }
 
 interface_subprogram_default :: { Maybe InterfaceSubprogramDefault }
 interface_subprogram_default :
@@ -2031,15 +1986,7 @@ entity_designator :
 
 entity_tag :: { Name }
 entity_tag :
-     simple_name
-       { $1 }
-   | CHAR
-       { let { (lit, _) = getCHAR $1 }
-         in
-           mkName [] (EnumN lit (srclocOf $1))
-       }
-   | operator_symbol
-       { mkName [] (OpN $1 (srclocOf $1)) }
+  name_ { $1 [] }
 
 {-
 [§ 7.3]
@@ -2216,92 +2163,84 @@ attribute_designator ::= attribute_simple_name
 
 name :: { Name }
 name :
-    base_name
-      {% do { clearPrefix
-            ; return $ mkName [] $1
-            }
-      }
-  | prefix base_name
-      {% do { clearPrefix
-            ; return $ mkName (rev $1) $2
-            }
-      }
+    name_
+      {$1 [] }
+  | prefix name_
+      { $2 (rev $1) }
   | prefix 'all'
-      {% do { clearPrefix
-            ; let all = AllN (srclocOf $1)
-            ; return $ mkName (rev $1) all
+      { let { ids = rev $1
+            ; prefix = init ids
+            ; n = last ids
+            }
+        in
+          AllN (SimpleN prefix n (srclocOf $1)) ($1 `srcspan` $2)
+      }
+{-
+  | name '(' expression_rlist ')'
+      {% checkArrayIndexOrSlice $1
+                                (ParensR (rev $3) ($2 `srcspan` $4))
+                                ($1 `srcspan` $4)
+      }
+-}
+  | name signature_opt '\'' attribute_designator
+      { AttrN $1 $2 $4 Nothing ($1 `srcspan` $4) }
+{-
+  | name signature_opt '\'' attribute_designator '(' expression ')'
+      {% do { e <- checkExp $6
+            ; pure $ AttrN $1 $2 $4 (Just e) ($1 `srcspan` $7)
             }
       }
+-}
 
-base_name :: { BaseName }
-base_name :
+name_ :: { [Id] -> Name }
+name_ :
     identifier
-      { IdN $1 (srclocOf $1) }
+      { \prefix -> SimpleN prefix $1 (prefix `srcspan` $1) }
   | operator_symbol
-      { OpN $1 (srclocOf $1) }
+      { \prefix -> OpN prefix $1 (prefix `srcspan` $1) }
   | CHAR
       { let { (lit, _) = getCHAR $1 }
         in
-          EnumN lit (srclocOf $1)
+          \prefix -> EnumN prefix lit (prefix `srcspan` $1)
       }
-  | 'arrname' identifier '(' expression_rlist ')'
-      {% checkArrayIndexOrSlice $2
-                                (ParensR (rev $4) ($3 `srcspan` $5))
-                                ($1 `srcspan` $5)
-      }
-{-
-  | identifier signature_opt '\'' attribute_designator attr_arg_opt
-      { AttrN $1 $2 $4 $5 ($1 `srcspan` $5) }
--}
-  | identifier '\'' attribute_designator
-      { AttrN $1 Nothing $3 Nothing ($1 `srcspan` $3) }
-
-{-
-attr_arg_opt :: { Maybe Exp }
-attr_arg_opt :
-     {- empty -}        { Nothing }
-  |  '(' expression ')' { Just $2 }
--}
-
-type_name :: { Name }
-type_name :
-    type_base_name
-      { mkName [] $1 }
-  | prefix type_base_name
-      { mkName (rev $1) $2 }
-
-type_base_name :: { BaseName }
-type_base_name : type_identifier { IdN $1 (srclocOf $1) }
-
-function_name :: { Name }
-function_name :
-    function_base_name
-      { mkName [] $1 }
-  | prefix function_base_name
-      { mkName (rev $1) $2 }
-
-function_base_name :: { BaseName }
-function_base_name : fun_identifier { IdN $1 (srclocOf $1) }
 
 prefix :: { RevList Id }
 prefix :
     identifier '.'
-      {% setPrefix $ rsingleton $1 }
+      { rsingleton $1 }
   | identifier error
       {% expected ["`.'"] (Just $ text "identifier" <+> quote (ppr $1) <+> text "that is part of a prefix") }
   | prefix identifier '.'
-      {% setPrefix $ rcons $2 $1 }
+      { rcons $2 $1 }
+
+simple_type_name :: { [Id] -> Name }
+simple_type_name :
+    type_identifier { \prefix -> SimpleN prefix $1 (prefix `srcspan` $1) }
+
+type_name :: { Name }
+type_name :
+    simple_type_name
+      { $1 [] }
+  | prefix simple_type_name
+      { $2 (rev $1) }
+  | 'typename' name_
+      { $2 [] }
+  | 'typename' prefix name_
+      { $3 (rev $2) }
 
 name_rlist :: { RevList Name }
 name_rlist :
     name                { rsingleton $1 }
   | name_rlist ',' name { rcons $3 $1 }
 
+function_name :: { Name }
+function_name : name { $1 }
+
 verification_unit_name :: { Name }
 verification_unit_name : name { $1 }
 
 simple_name :: { Name }
-simple_name : identifier { mkName [] (IdN $1 (srclocOf $1)) }
+simple_name : identifier { mkIdName $1 }
 
 simple_name_opt :: { Maybe Name }
 simple_name_opt :
@@ -2311,8 +2250,10 @@ simple_name_opt :
 attribute_simple_name :: { Name }
 attribute_simple_name : simple_name { $1 }
 
+{-
 record_element_simple_name :: { Name }
 record_element_simple_name : simple_name { $1 }
+-}
 
 attribute_designator :: { Name }
 attribute_designator : attribute_simple_name { $1 }
@@ -2505,7 +2446,8 @@ primary :
       { ExpR $ QualE $1 (srclocOf $1) }
   -- type_conversion
   -- OR subtype_indication of the following form:
-  -- type_mark array_constraint
+  --   type_mark array_constraint
+  -- | type_mark record_constraint
   | type_mark '(' expression_rlist ')'
       { CastR $1 (ParensR (rev $3) ($2 `srcspan` $4)) ($1 `srcspan` $4) }
   | allocator
@@ -2521,16 +2463,9 @@ primary :
             SubtypeR (Subtype Nothing $1 (Just range) ($1 `srcspan` $2))
                      ($1 `srcspan` $2)
       }
-  | type_mark record_constraint
-      { SubtypeR (Subtype Nothing $1 (Just $2) ($1 `srcspan` $2))
-                 ($1 `srcspan` $2)
-      }
   | type_mark '(' expression_rlist ')' array_element_constraint
-      {% do { f <- checkArrayConstraint (ParensR (rev $3) ($2 `srcspan` $4))
-            ; pure $ SubtypeR (Subtype Nothing
-                                       $1
-                                       (Just (f (Just $5) ($1 `srcspan` $5)))
-                                       ($1 `srcspan` $5))
+      {% do { c <- checkArrayConstraint (ParensR (rev $3) ($2 `srcspan` $4)) (Just $5)
+            ; pure $ SubtypeR (Subtype Nothing $1 (Just c) ($1 `srcspan` $5))
                               ($1 `srcspan` $5)
             }
       }
@@ -3607,8 +3542,18 @@ instantiated_unit ::=
 
 component_instantiation_statement :: { CStm }
 component_instantiation_statement :
-    instantiated_unit generic_map_aspect_opt port_map_aspect_opt ';'
-      { InstS $1 $2 $3 ($1 `srcspan` $4) }
+-- XXX This case looks like a procedure call with no arguments, so that's what
+-- we parse it as for now.
+{-
+    instantiated_unit ';'
+      { InstS $1 Nothing Nothing ($1 `srcspan` $2) }
+-}
+    instantiated_unit generic_map_aspect ';'
+      { InstS $1 (Just $2) Nothing ($1 `srcspan` $3) }
+  | instantiated_unit port_map_aspect ';'
+      { InstS $1 Nothing (Just $2) ($1 `srcspan` $3) }
+  | instantiated_unit generic_map_aspect port_map_aspect ';'
+      { InstS $1 (Just $2) (Just $3) ($1 `srcspan` $3) }
 
 instantiated_unit :: { InstUnit }
 instantiated_unit :
@@ -3892,14 +3837,7 @@ identifier :
 
 type_identifier :: { Id }
 type_identifier :
-    TYID          { mkId (getTYID $1) (srclocOf $1) }
-  | 'typename' ID { mkId (getID $2) (srclocOf $2) }
-
-
-fun_identifier :: { Id }
-fun_identifier :
-    FUNID        { mkId (getFUNID $1) (srclocOf $1) }
-  | 'funname' ID { mkId (getID $2) (srclocOf $2) }
+  TYID { mkId (getTYID $1) (srclocOf $1) }
 
 {-
 [§ 15.5.1]
@@ -3992,12 +3930,6 @@ getEXTID (L _ (T.Text_ident ident)) = ident
 getTYID :: L T.Token -> Symbol
 getTYID (L _ (T.Ttype_ident ident)) = ident
 
-getFUNID :: L T.Token -> Symbol
-getFUNID (L _ (T.Tfun_ident ident)) = ident
-
-getARRID :: L T.Token -> Symbol
-getARRID (L _ (T.Tarr_ident ident)) = ident
-
 getINT :: L T.Token -> (String, Integer)
 getINT (L _ (T.TintLit x)) = x
 
@@ -4052,20 +3984,9 @@ unopRE op e = ExpR <$> (unopE op <$> checkExp e)
 binopRE :: Binop -> RichExp -> RichExp -> P RichExp
 binopRE op e1 e2 = ExpR <$> (binopE op <$> checkExp e1 <*> checkExp e2)
 
-setPrefix :: RevList Id -> P (RevList Id)
-setPrefix pfx = do
-    putPrefix (rev pfx)
-    return pfx
-
-clearPrefix :: P ()
-clearPrefix = putPrefix []
-
 -- | Convert a located string into an operator symbol.
 mkOperator :: Loc -> String -> Operator
 mkOperator loc s = Operator (intern s) (srclocOf loc)
-
-mkName :: [Id] -> BaseName -> Name
-mkName pfx n = Name pfx n (pfx `srcspan` n)
 
 -- A 'rich' expression that can represent an expression, choice, or element
 -- association. Used to avoid grammar ambiguity since these forms are ambiguous.
@@ -4115,7 +4036,7 @@ instance Located RichExp where
     locOf (AntiExpsR _ l)  = locOf l
 
 checkIdentifier :: Name -> P Id
-checkIdentifier (Name [] (IdN ident _) _) = pure ident
+checkIdentifier (SimpleN [] ident _) = pure ident
 checkIdentifier re =
     parserError re $ text "Expected identifier but got" <+> ppr re
 
@@ -4235,15 +4156,13 @@ checkActualPart = go
         e <- checkExp re
         pure $ ExpA False e (srclocOf re)
 
-type ArrayConstraint = Maybe Constraint -> SrcLoc -> Constraint
+checkArrayConstraint :: RichExp -> Maybe Constraint -> P Constraint
+checkArrayConstraint re@(ParensR [OpenR{}] _) c =
+    pure $ ArrayOpenC c (re `srcspan` c)
 
-checkArrayConstraint :: RichExp -> P ArrayConstraint
-checkArrayConstraint (ParensR [OpenR{}] l) =
-    pure $ \c l' -> ArrayOpenC c (l `srcspan` l')
-
-checkArrayConstraint re = do
+checkArrayConstraint re c' = do
     c <- checkIndexConstraint re
-    pure $ \c' l' -> ArrayC c c' (srclocOf re `srcspan` l')
+    pure $ ArrayC c c' (re `srcspan` c')
 
 checkIndexConstraint :: RichExp -> P IndexConstraint
 checkIndexConstraint (ParensR res l) =
@@ -4252,6 +4171,26 @@ checkIndexConstraint (ParensR res l) =
 checkIndexConstraint re =
     parserError re $ text "Expected index constraint but got" <+> ppr re
 
+checkElementConstraint :: RichExp -> P Constraint
+checkElementConstraint re =
+    checkArrayConstraint re Nothing
+    `catch` \(_ :: ParserException) -> checkRecordConstraint re
+
+checkRecordConstraint :: RichExp -> P Constraint
+checkRecordConstraint (ParensR res l) =
+    RecordC <$> mapM checkRecordElementConstraint res <*> pure l
+
+checkRecordConstraint re =
+    parserError re $ text "Expected record constraint but got" <+> ppr re
+
+checkRecordElementConstraint :: RichExp -> P (Id, Constraint)
+checkRecordElementConstraint (CallR (SimpleN [] n _) res _) = do
+    c <- checkElementConstraint (ParensR res (srclocOf res))
+    pure (n, c)
+
+checkRecordElementConstraint re =
+    parserError re $ text "Expected record elementconstraint but got" <+> ppr re
+
 checkDiscreteRange :: RichExp -> P DiscreteRange
 checkDiscreteRange (RangeR rng l) = pure $ RangeDR rng l
 checkDiscreteRange re             = SubtypeDR <$> checkSubtypeIndication re
@@ -4259,8 +4198,8 @@ checkDiscreteRange re             = SubtypeDR <$> checkSubtypeIndication re
 
 checkSubtypeIndication :: RichExp -> P Subtype
 checkSubtypeIndication (CastR ty re l) = do
-    f <- checkArrayConstraint re
-    pure $ Subtype Nothing ty (Just (f Nothing l)) l
+    c <- checkElementConstraint re
+    pure $ Subtype Nothing ty (Just c) l
 
 checkSubtypeIndication (SubtypeR ty _) =
     pure ty
@@ -4268,19 +4207,19 @@ checkSubtypeIndication (SubtypeR ty _) =
 checkSubtypeIndication re =
     parserError re $ text "Expected subtype but got" <+> ppr re
 
-checkArrayIndexOrSlice :: Id -> RichExp -> SrcLoc -> P BaseName
-checkArrayIndexOrSlice ident (ParensR [re] _) l =
-    SliceN ident <$> checkDiscreteRange re <*> pure l
+checkArrayIndexOrSlice :: Name -> RichExp -> SrcLoc -> P Name
+checkArrayIndexOrSlice n (ParensR [re] _) l =
+    SliceN n <$> checkDiscreteRange re <*> pure l
 
-checkArrayIndexOrSlice ident (ParensR res _) l = do
+checkArrayIndexOrSlice n (ParensR res _) l = do
     es <- mapM checkExp res
-    pure $ IndexedN ident es l
+    pure $ IndexedN n es l
 
 checkArrayIndexOrSlice _ re _ =
     parserError re $ text "Expected array index but got" <+> ppr re
 
 checkGenerateSpec :: RichExp -> P GenSpec
-checkGenerateSpec (ExpR (VarE (Name [] (IdN ident _) _) l)) =
+checkGenerateSpec (ExpR (VarE (SimpleN [] ident l) _)) =
     pure $ AltG ident l
 
 checkGenerateSpec re =
@@ -4297,7 +4236,7 @@ checkFunProcInst decl =
     parserError decl $
     text "Expected procedure base name but got" <+> ppr decl
 
-data FunSpecP = FunSpecP BaseName (Maybe Purity) (Maybe SubprogramHeader) !SrcLoc
+data FunSpecP = FunSpecP Name (Maybe Purity) (Maybe SubprogramHeader) !SrcLoc
   deriving (Eq, Ord, Show)
 
 instance Located FunSpecP where
