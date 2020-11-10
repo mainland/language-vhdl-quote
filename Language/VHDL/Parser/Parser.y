@@ -174,6 +174,7 @@ import Language.VHDL.Syntax hiding (L)
   ':'  { L _ T.Tcolon }
   '|'  { L _ T.Tbar }
   '@'  { L _ T.Tat }
+  '^'  { L _ T.Tcaret }
 
   '('  { L _ T.Tlparen }
   ')'  { L _ T.Trparen }
@@ -2191,6 +2192,8 @@ name :
             }
       }
 -}
+  | external_name
+      { $1 }
 
 name_ :: { [Id] -> Name }
 name_ :
@@ -2295,6 +2298,93 @@ pathname_element ::=
   | generate_statement_label [ ( static_expression ) ]
   | package_simple_name
 -}
+
+external_name :: { Name }
+external_name :
+    external_constant_name { $1 }
+  | external_signal_name   { $1 }
+  | external_variable_name { $1 }
+
+external_constant_name :: { Name }
+external_constant_name :
+  '<<' 'constant' external_pathname ':' subtype_indication '>>'
+    { ExtConstN $3 $5 ($1 `srcspan` $6) }
+
+external_signal_name :: { Name }
+external_signal_name :
+  '<<' 'signal' external_pathname ':' subtype_indication '>>'
+    { ExtSigN $3 $5 ($1 `srcspan` $6) }
+
+external_variable_name :: { Name }
+external_variable_name :
+  '<<' 'variable' external_pathname ':' subtype_indication '>>'
+    { ExtVarN $3 $5 ($1 `srcspan` $6) }
+
+external_pathname :: { ExtPath }
+external_pathname :
+    package_pathname  { $1 }
+  | absolute_pathname { $1 }
+  | relative_pathname { $1 }
+
+package_pathname :: { ExtPath }
+package_pathname :
+  '@' identifier '.' package_simple_names identifier
+    { PkgP ($2 : rev $4) $5 ($1 `srcspan` $5) }
+
+package_simple_names :: { RevList Id }
+package_simple_names :
+    identifier '.'
+      { rsingleton $1 }
+  | identifier error
+      {% expected ["`.'"] (Just $ text "identifier" <+> quote (ppr $1) <+> text "that is part of an external package name") }
+  | package_simple_names identifier '.'
+      { rcons $2 $1 }
+
+absolute_pathname :: { ExtPath }
+absolute_pathname :
+  '.' partial_pathname { AbsP $2 ($1 `srcspan` $2) }
+
+relative_pathname :: { ExtPath }
+relative_pathname :
+  carets partial_pathname { RelP (unLoc $1) $2 ($1 `srcspan` $2) }
+
+carets :: { L Int }
+carets :
+    '^' '.'
+      { L ($1 <--> $2) 1 }
+  | '^' error
+      {% expected ["`.'"] Nothing }
+  | carets '^' '.'
+      { let { L l n = $1 }
+        in
+          L (l <--> $3) (n+1)
+      }
+
+partial_pathname :: { PartialPath }
+partial_pathname :
+    simple_name
+      { PartialPath [] $1 (srclocOf $1) }
+  | pathname_elements simple_name
+      { PartialPath (rev $1) $2 ($1 `srcspan` $2) }
+
+pathname_elements :: { RevList PathElem }
+pathname_elements :
+    pathname_element '.'
+      { rsingleton $1 }
+  | pathname_element error
+      {% expected ["`.'"] Nothing }
+  | pathname_elements pathname_element '.'
+      { rcons $2 $1 }
+
+pathname_element :: { PathElem }
+pathname_element :
+    identifier
+      { NameP $1 (srclocOf $1) }
+  | identifier '(' expression ')'
+      {% do { e <- checkExp $3
+            ; pure $ GenLabelP $1 (Just e) ($1 `srcspan` $4)
+            }
+      }
 
 {-
 [§ 9.1]

@@ -1625,14 +1625,14 @@ type Prefix = Name
 
 type Suffix = Name
 
-data ExtPath = PkgP [Name] !SrcLoc
+data ExtPath = PkgP [Id] Id !SrcLoc
              | AbsP PartialPath !SrcLoc
              | RelP Int PartialPath !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty ExtPath where
-    ppr (PkgP ns _) =
-        char '@' <//> cat (punctuate dot (map ppr ns))
+    ppr (PkgP ns n _) =
+        char '@' <//> cat (punctuate dot (map ppr (ns ++ [n])))
 
     ppr (AbsP path _) =
         dot <//> ppr path
@@ -1648,7 +1648,7 @@ instance Pretty PartialPath where
     ppr (PartialPath elems n _) =
         cat (punctuate dot (map ppr elems ++ [ppr n]))
 
-data PathElem = NameP Name !SrcLoc
+data PathElem = NameP Id !SrcLoc
               | LabelP Label !SrcLoc
               | GenLabelP Label (Maybe Exp) !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)

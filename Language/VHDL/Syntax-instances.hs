@@ -96,6 +96,10 @@ instance Located Exp where
   locOf (AllocTyE _ l) = locOf l
   locOf (AllocE _ l) = locOf l
   locOf (AntiExp _ l) = locOf l
+instance Located ExtPath where
+  locOf (PkgP _ _ l) = locOf l
+  locOf (AbsP _ l) = locOf l
+  locOf (RelP _ _ l) = locOf l
 instance Located GenBody where
   locOf (GenBody _ _ l) = locOf l
 instance Located GenericClause where
@@ -158,6 +162,12 @@ instance Located (NameList a) where
   locOf (All l) = locOf l
 instance Located Operator where
   locOf (Operator _ l) = locOf l
+instance Located PartialPath where
+  locOf (PartialPath _ _ l) = locOf l
+instance Located PathElem where
+  locOf (NameP _ l) = locOf l
+  locOf (LabelP _ l) = locOf l
+  locOf (GenLabelP _ _ l) = locOf l
 instance Located PortClause where
   locOf (PortClause _ l) = locOf l
 instance Located PortMapAspect where

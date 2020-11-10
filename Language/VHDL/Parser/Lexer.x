@@ -141,6 +141,7 @@ vhdl :-
   ":"   { token Tcolon }
   "|"   { token Tbar }
   "@"   { token Tat }
+  "^"   { token Tcaret }
 
   "("   { token Tlparen }
   ")"   { token Trparen }

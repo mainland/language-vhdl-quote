@@ -167,6 +167,7 @@ data Token = Teof
            | Tcolon  -- ^ @:@
            | Tbar    -- ^ @|@
            | Tat     -- ^ @\@@
+           | Tcaret  -- ^ @\^@
 
            | Tlparen -- ^ @(@
            | Trparen -- ^ @)@
@@ -374,6 +375,7 @@ instance Pretty Token where
     ppr Tcolon  = text ":"
     ppr Tbar    = text "|"
     ppr Tat     = text "@"
+    ppr Tcaret  = text "^"
 
     ppr Tlparen = text "("
     ppr Trparen = text ")"
