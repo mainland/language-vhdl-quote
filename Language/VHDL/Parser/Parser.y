@@ -2564,6 +2564,8 @@ primary :
   -- Could be an actual_designator or part of an array_constraint
   | 'open'
       { OpenR (srclocOf $1) }
+  | 'others'
+      { OthersR (srclocOf $1) }
 
 expression_rlist :: { RevList RichExp }
 expression_rlist :
@@ -4086,6 +4088,7 @@ data RichExp = ExpR Exp
              | RangeR Range !SrcLoc
              | SubtypeR Subtype !SrcLoc
              | OpenR !SrcLoc
+             | OthersR !SrcLoc
              | ParensR [RichExp] !SrcLoc
              | LabeledR Id RichExp !SrcLoc
              | InertialR Exp !SrcLoc
@@ -4102,6 +4105,7 @@ instance Pretty RichExp where
     pprPrec p (RangeR rng _)     = pprPrec p rng
     pprPrec p (SubtypeR ty _)    = pprPrec p ty
     pprPrec _ OpenR{}            = text "open"
+    pprPrec _ OthersR{}          = text "others"
     pprPrec _ (ParensR res _)    = parens (commasep (map ppr res))
     pprPrec _ (LabeledR l re _)  = ppr l <+> colon <+> ppr re
     pprPrec _ (InertialR e _)    = text "inertial" <+> ppr e
@@ -4117,6 +4121,7 @@ instance Located RichExp where
     locOf (RangeR _ l)     = locOf l
     locOf (SubtypeR _ l)   = locOf l
     locOf (OpenR l)        = locOf l
+    locOf (OthersR l)      = locOf l
     locOf (ParensR _ l)    = locOf l
     locOf (LabeledR _ _ l) = locOf l
     locOf (InertialR _ l)  = locOf l
@@ -4185,7 +4190,8 @@ checkLabeledChoices re =
     parserError re $ text "Expected labeled expression but got" <+> ppr re
 
 checkChoice :: RichExp -> P Choice
-checkChoice (ExpR e) = pure $ ExpC e (srclocOf e)
+checkChoice (ExpR e)    = pure $ ExpC e (srclocOf e)
+checkChoice (OthersR l) = pure $ OthersC (srclocOf l)
 checkChoice re =
     parserError re $ text "Expected choice but got" <+> ppr re
 
