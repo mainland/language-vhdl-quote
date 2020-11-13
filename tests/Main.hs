@@ -116,6 +116,19 @@ statementTests =
             begin
              $stms:stms
             end process;|]
+      it "Concurrent statement antiquote" $
+        [vdecl|architecture foo of bar is
+            begin
+              y <= $zero;
+              y <= $one;
+            end;|]
+        @?=
+        let cstms = [ [vcstm|y <= $zero;|],  [vcstm|y <= $one;|] ]
+        in
+          [vdecl|architecture foo of bar is
+              begin
+                $cstms:cstms
+              end;|]
   where
     zero :: Exp
     zero = [vexp|0|]

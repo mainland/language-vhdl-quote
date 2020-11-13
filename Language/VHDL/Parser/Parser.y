@@ -204,16 +204,18 @@ import Language.VHDL.Syntax hiding (L)
   '?>=' { L _ T.Tmatch_ge }
   '?>'  { L _ T.Tmatch_gt }
 
-  ANTI_ID   { L _ T.Tanti_id{} }
-  ANTI_EXP  { L _ T.Tanti_exp{} }
-  ANTI_EXPS { L _ T.Tanti_exps{} }
-  ANTI_INT  { L _ T.Tanti_int{} }
-  ANTI_REAL { L _ T.Tanti_real{} }
-  ANTI_LIT  { L _ T.Tanti_lit{} }
-  ANTI_LITS { L _ T.Tanti_lits{} }
-  ANTI_STM  { L _ T.Tanti_stm{} }
-  ANTI_STMS { L _ T.Tanti_stms{} }
-  ANTI_TYPE { L _ T.Tanti_type{} }
+  ANTI_ID    { L _ T.Tanti_id{} }
+  ANTI_EXP   { L _ T.Tanti_exp{} }
+  ANTI_EXPS  { L _ T.Tanti_exps{} }
+  ANTI_INT   { L _ T.Tanti_int{} }
+  ANTI_REAL  { L _ T.Tanti_real{} }
+  ANTI_LIT   { L _ T.Tanti_lit{} }
+  ANTI_LITS  { L _ T.Tanti_lits{} }
+  ANTI_STM   { L _ T.Tanti_stm{} }
+  ANTI_STMS  { L _ T.Tanti_stms{} }
+  ANTI_CSTM  { L _ T.Tanti_cstm{} }
+  ANTI_CSTMS { L _ T.Tanti_cstms{} }
+  ANTI_TYPE  { L _ T.Tanti_type{} }
 
 %left DIRECTION
 %left '??'
@@ -3392,6 +3394,8 @@ concurrent_statement :
   | concurrent_signal_assignment_statement { $1 }
   | component_instantiation_statement      { $1 }
   | generate_statement                     { $1 }
+  | ANTI_CSTM                              { AntiCStm (getANTI_CSTM $1) (srclocOf $1) }
+  | ANTI_CSTMS                             { AntiCStms (getANTI_CSTMS $1) (srclocOf $1) }
 
 concurrent_statements :: { [CStm] }
 concurrent_statements : concurrent_statement_rlist { rev $1 }
@@ -4098,6 +4102,12 @@ getANTI_STM (L _ (T.Tanti_stm stm)) = stm
 
 getANTI_STMS :: L T.Token -> String
 getANTI_STMS (L _ (T.Tanti_stms stms)) = stms
+
+getANTI_CSTM :: L T.Token -> String
+getANTI_CSTM (L _ (T.Tanti_cstm stm)) = stm
+
+getANTI_CSTMS :: L T.Token -> String
+getANTI_CSTMS (L _ (T.Tanti_cstms stms)) = stms
 
 getANTI_TYPE :: L T.Token -> String
 getANTI_TYPE (L _ (T.Tanti_type e)) = e

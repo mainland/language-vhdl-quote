@@ -2532,6 +2532,8 @@ data CStm = BlockS (Maybe Cond) (Maybe GenHeader) (Maybe PortHeader) [Decl] [CSt
           | ForGenS Id DiscreteRange GenBody !SrcLoc
           | IfGenS [(Cond, GenAlt)] (Maybe GenAlt) !SrcLoc
           | CaseGenS Exp [(Choices, GenAlt)] !SrcLoc
+          | AntiCStm String !SrcLoc
+          | AntiCStms String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty CStm where
@@ -2649,6 +2651,12 @@ instance Pretty CStm where
         pprLabel :: Maybe Label -> Doc
         pprLabel Nothing    = empty
         pprLabel (Just lbl) = ppr lbl <+> colon
+
+    ppr (AntiCStm stm _) =
+        pprAnti "cstm" stm
+
+    ppr (AntiCStms stms _) =
+        pprAnti "cstms" stms
 
     pprList = semistackall . map ppr
 

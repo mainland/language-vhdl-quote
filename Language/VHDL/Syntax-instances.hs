@@ -22,6 +22,8 @@ instance Located CStm where
   locOf (ForGenS _ _ _ l) = locOf l
   locOf (IfGenS _ _ l) = locOf l
   locOf (CaseGenS _ _ l) = locOf l
+  locOf (AntiCStm _ l) = locOf l
+  locOf (AntiCStms _ l) = locOf l
 instance Located Choice where
   locOf (ExpC _ l) = locOf l
   locOf (DiscreteRangeC _ l) = locOf l

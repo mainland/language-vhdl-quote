@@ -229,6 +229,16 @@ qqStmsE []                      = Just [|[]|]
 qqStmsE (V.AntiStms v _ : stms) = Just [|$(antiExpQ v) ++ $(dataToExpQ qqExp stms)|]
 qqStmsE (stm : stms)            = Just [|$(dataToExpQ qqExp stm) : $(dataToExpQ qqExp stms)|]
 
+qqCStmE :: V.CStm -> Maybe ExpQ
+qqCStmE (V.AntiCStm stm _) = Just $ antiExpQ stm
+qqCStmE _                  = Nothing
+
+qqCStmsE :: [V.CStm] -> Maybe ExpQ
+qqCStmsE []                       = Just [|[]|]
+qqCStmsE (V.AntiCStms v _ : stms) = Just [|$(antiExpQ v) ++ $(dataToExpQ qqExp stms)|]
+qqCStmsE (stm : stms)            = Just [|$(dataToExpQ qqExp stm) : $(dataToExpQ qqExp stms)|]
+
+
 qqSubtypeE :: V.Subtype -> Maybe ExpQ
 qqSubtypeE (V.AntiType e loc) = Just [|toType $(antiExpQ e) $(qqLocE loc) :: V.Subtype|]
 qqSubtypeE _                  = Nothing
@@ -250,6 +260,8 @@ qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqExpE
                       `extQ` qqStmE
                       `extQ` qqStmsE
+                      `extQ` qqCStmE
+                      `extQ` qqCStmsE
                       `extQ` qqSubtypeE
                       `extQ` qqElemAssocListE
 
