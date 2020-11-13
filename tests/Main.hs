@@ -103,9 +103,25 @@ statementTests =
         [vstm|x(0) := y;|] @?= [vstm|x($zero) := y;|]
       it "Assignment from slice" $
         [vstm|x := y(n-1 downto 0);|] @?= [vstm|x := y(n-1 downto $zero);|]
+      it "Statement antiquote" $
+        [vcstm|process
+            begin
+              y := 0;
+              y := 1;
+            end process;|]
+        @?=
+        let stms = [ [vstm|y := $zero;|],  [vstm|y := $one;|] ]
+        in
+          [vcstm|process
+            begin
+             $stms:stms
+            end process;|]
   where
     zero :: Exp
     zero = [vexp|0|]
+
+    one :: Exp
+    one = [vexp|1|]
 
 isIntLit :: Lit -> Integer -> Assertion
 isIntLit (IntLit _ i _) i' = i @?= i'

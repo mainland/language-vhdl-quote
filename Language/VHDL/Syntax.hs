@@ -2090,6 +2090,8 @@ data Stm = LabelS Label Stm !SrcLoc
          | ExitS (Maybe Label) (Maybe Cond) !SrcLoc
          | ReturnS (Maybe Exp) !SrcLoc
          | NullS !SrcLoc
+         | AntiStm String !SrcLoc
+         | AntiStms String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty Stm where
@@ -2212,6 +2214,12 @@ instance Pretty Stm where
 
     ppr NullS{} =
         text "null"
+
+    ppr (AntiStm stm _) =
+        pprAnti "stm" stm
+
+    ppr (AntiStms stms _) =
+        pprAnti "stms" stms
 
     pprList = semistackall . map ppr
 

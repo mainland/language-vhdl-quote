@@ -211,6 +211,8 @@ import Language.VHDL.Syntax hiding (L)
   ANTI_REAL { L _ T.Tanti_real{} }
   ANTI_LIT  { L _ T.Tanti_lit{} }
   ANTI_LITS { L _ T.Tanti_lits{} }
+  ANTI_STM  { L _ T.Tanti_stm{} }
+  ANTI_STMS { L _ T.Tanti_stms{} }
   ANTI_TYPE { L _ T.Tanti_type{} }
 
 %left DIRECTION
@@ -2738,6 +2740,8 @@ sequential_statement :
   | exit_statement                { $1 }
   | return_statement              { $1 }
   | null_statement                { $1 }
+  | ANTI_STM                      { AntiStm (getANTI_STM $1) (srclocOf $1) }
+  | ANTI_STMS                     { AntiStms (getANTI_STMS $1) (srclocOf $1) }
 
 sequence_of_statements :: { [Stm] }
 sequence_of_statements : sequential_statement_rlist { rev $1 }
@@ -4088,6 +4092,12 @@ getANTI_LIT (L _ (T.Tanti_lit e)) = e
 
 getANTI_LITS :: L T.Token -> String
 getANTI_LITS (L _ (T.Tanti_lits e)) = e
+
+getANTI_STM :: L T.Token -> String
+getANTI_STM (L _ (T.Tanti_stm stm)) = stm
+
+getANTI_STMS :: L T.Token -> String
+getANTI_STMS (L _ (T.Tanti_stms stms)) = stms
 
 getANTI_TYPE :: L T.Token -> String
 getANTI_TYPE (L _ (T.Tanti_type e)) = e

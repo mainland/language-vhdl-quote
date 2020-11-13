@@ -220,6 +220,15 @@ qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
 
+qqStmE :: V.Stm -> Maybe ExpQ
+qqStmE (V.AntiStm stm _) = Just $ antiExpQ stm
+qqStmE _                 = Nothing
+
+qqStmsE :: [V.Stm] -> Maybe ExpQ
+qqStmsE []                      = Just [|[]|]
+qqStmsE (V.AntiStms v _ : stms) = Just [|$(antiExpQ v) ++ $(dataToExpQ qqExp stms)|]
+qqStmsE (stm : stms)            = Just [|$(dataToExpQ qqExp stm) : $(dataToExpQ qqExp stms)|]
+
 qqSubtypeE :: V.Subtype -> Maybe ExpQ
 qqSubtypeE (V.AntiType e loc) = Just [|toType $(antiExpQ e) $(qqLocE loc) :: V.Subtype|]
 qqSubtypeE _                  = Nothing
@@ -239,6 +248,8 @@ qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqLitE
                       `extQ` qqIdE
                       `extQ` qqExpE
+                      `extQ` qqStmE
+                      `extQ` qqStmsE
                       `extQ` qqSubtypeE
                       `extQ` qqElemAssocListE
 

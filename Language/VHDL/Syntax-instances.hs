@@ -204,6 +204,8 @@ instance Located Stm where
   locOf (ExitS _ _ l) = locOf l
   locOf (ReturnS _ l) = locOf l
   locOf (NullS l) = locOf l
+  locOf (AntiStm _ l) = locOf l
+  locOf (AntiStms _ l) = locOf l
 instance Located SubprogramHeader where
   locOf (SubprogramHeader _ _ l) = locOf l
 instance Located Subtype where
