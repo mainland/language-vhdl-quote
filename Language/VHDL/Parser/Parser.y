@@ -4024,8 +4024,10 @@ happyError :: L T.Token -> P a
 happyError (L loc t) = do
     prev <- getPrevToken
     parserError (locStart loc) $
-      text "parse error on" <+> quote (ppr t) <+>
-      text "after" <+> ppr prev
+      text "parse error on" <+> quote (ppr t) <+> pprAfter prev
+  where
+    pprAfter Nothing    = empty
+    pprAfter (Just tok) = text "after" <+> ppr tok
 
 getID :: L T.Token -> Symbol
 getID (L _ (T.Tident ident)) = ident

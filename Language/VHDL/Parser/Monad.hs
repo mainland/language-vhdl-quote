@@ -93,7 +93,7 @@ type Extensions = Word32
 data PState = PState
     { input      :: !AlexInput
     , prevToken  :: Maybe (L Token)
-    , curToken   :: L Token
+    , curToken   :: Maybe (L Token)
     , lexState   :: ![Int]
     , extensions :: !Extensions
     , typeNames  :: Set Id
@@ -107,7 +107,7 @@ emptyPState :: [Extension]
 emptyPState exts typens buf pos = PState
     { input      = alexInput buf pos
     , prevToken  = Nothing
-    , curToken   = error "no token"
+    , curToken   = Nothing
     , lexState   = [0]
     , extensions = foldl' setBit 0 (map fromEnum exts)
     , typeNames  = typens
@@ -183,12 +183,12 @@ getLexState = gets (head . lexState)
 getPrevToken :: P (Maybe (L Token))
 getPrevToken = gets prevToken
 
-getCurToken :: P (L Token)
+getCurToken :: P (Maybe (L Token))
 getCurToken = gets curToken
 
 setCurToken :: L Token -> P ()
-setCurToken tok = modify $ \s -> s { prevToken = Just (curToken s)
-                                   , curToken  = tok
+setCurToken tok = modify $ \s -> s { prevToken = curToken s
+                                   , curToken  = Just tok
                                    }
 
 useExts :: Extensions -> P Bool
@@ -302,24 +302,36 @@ expected alts after = do
     tok <- getCurToken
     expectedAt tok alts after
 
-expectedAt :: L Token -> [String] -> Maybe Doc -> P b
-expectedAt tok@(L loc _) alts after =
-    parserError (locStart loc) $
-    text "Expected" <+> pprAlts alts <+> pprGot tok <> pprAfter after
+expectedAt :: Maybe (L Token) -> [String] -> Maybe Doc -> P b
+expectedAt tok alts after = do
+    at <- getAt tok
+    parserError at $
+      text "Expected" <+> pprAlts alts <+> pprGot tok <+> pprAfter after
   where
+    getAt :: Maybe (L Token) -> P Loc
+    getAt Nothing = do
+        maybe_pos <- alexPos <$> getInput
+        case maybe_pos of
+            Nothing  -> pure NoLoc
+            Just pos -> pure $ Loc pos pos
+
+    getAt (Just (L loc _)) =
+        pure loc
+
     pprAlts :: [String] -> Doc
     pprAlts []        = empty
     pprAlts [s]       = text s
     pprAlts [s1, s2]  = text s1 <+> text "or" <+> text s2
     pprAlts (s : ss)  = text s <> comma <+> pprAlts ss
 
-    pprGot :: L Token -> Doc
-    pprGot (L _ Teof)  = text "but reached end of file"
-    pprGot (L _ t)     = text "but got" <+> quote (ppr t)
+    pprGot :: Maybe (L Token) -> Doc
+    pprGot Nothing            = empty
+    pprGot (Just (L _ Teof))  = text "but reached end of file"
+    pprGot (Just (L _ t))     = text "but got" <+> quote (ppr t)
 
     pprAfter :: Maybe Doc -> Doc
     pprAfter Nothing     = empty
-    pprAfter (Just what) = text " after" <+> what
+    pprAfter (Just what) = text "after" <+> what
 
 quote :: Doc -> Doc
 quote = enclose (char '`') (char '\'')
