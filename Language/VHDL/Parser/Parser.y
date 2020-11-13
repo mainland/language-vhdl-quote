@@ -2178,10 +2178,7 @@ name :
       }
 {-
   | name '(' expression_rlist ')'
-      {% checkArrayIndexOrSlice $1
-                                (ParensR (rev $3) ($2 `srcspan` $4))
-                                ($1 `srcspan` $4)
-      }
+      {% checkArrayIndexOrSlice $1 (rev $3) ($1 `srcspan` $4) }
 -}
   | name signature_opt '\'' attribute_designator
       { AttrN $1 $2 $4 Nothing ($1 `srcspan` $4) }
@@ -2530,8 +2527,8 @@ primary :
       { ExpR $ VarE $1 (srclocOf $1) }
   | literal
       { ExpR $ LitE $1 (srclocOf $1) }
-  | function_call
-      { $1 }
+  | name '(' expression_rlist ')'
+      { CallR $1 (rev $3) ($1 `srcspan` $4) }
   | qualified_expression
       { ExpR $ QualE $1 (srclocOf $1) }
   -- type_conversion
@@ -2649,12 +2646,17 @@ function_call ::=
 actual_parameter_part ::= parameter_association_list
 -}
 
+{-
 function_call :: { RichExp }
 function_call :
-  function_name '(' expression_rlist ')' { CallR $1 (rev $3) ($1 `srcspan` $4) }
+  name '(' expression_rlist ')'
+    { CallR $1 (rev $3) ($1 `srcspan` $4) }
+-}
 
+{-
 actual_parameter_part :: { [AssocElem] }
 actual_parameter_part : association_list { $1 }
+-}
 
 {-
 [§ 9.3.5]
@@ -2928,8 +2930,15 @@ delay_mechanism_clause :
 
 target :: { Target }
 target :
-    name      { NameT $1 (srclocOf $1) }
-  | aggregate { AggT $1 (srclocOf $1) }
+    name
+      { NameT $1 (srclocOf $1) }
+  | name '(' expression_rlist ')'
+      {% do { n <- checkArrayIndexOrSlice $1 (rev $3) ($1 `srcspan` $4)
+            ; pure $ NameT n ($1 `srcspan` $4)
+            }
+      }
+  | aggregate
+      { AggT $1 (srclocOf $1) }
 
 waveform :: { Waveform }
 waveform :
@@ -3185,8 +3194,13 @@ procedure_call_statement :
 
 procedure_call :: { (Name, [AssocElem]) }
 procedure_call :
-    function_name                               { ($1, []) }
-  | function_name '(' actual_parameter_part ')' { ($1, $3) }
+    name
+      { ($1, []) }
+  | name '(' expression_rlist ')'
+      {% do { args <- mapM checkArg (rev $3)
+            ; pure ($1, args)
+            }
+      }
 
 {-
 [§ 10.8]
@@ -4142,7 +4156,11 @@ checkExp (ExpR e) =
 
 -- function_call
 checkExp (CallR f args l) =
-    CallE f <$> mapM checkArg args <*> pure l
+    checkArray `catch` \(_ :: ParserException) -> checkFun
+  where
+    checkArray, checkFun :: P Exp
+    checkArray = VarE <$> checkArrayIndexOrSlice f args l <*> pure l
+    checkFun   = CallE f <$> mapM checkArg args <*> pure l
 
 -- type_conversion
 checkExp (CastR ty (ParensR [re] _) l) =
@@ -4303,16 +4321,20 @@ checkSubtypeIndication (SubtypeR ty _) =
 checkSubtypeIndication re =
     parserError re $ text "Expected subtype but got" <+> ppr re
 
-checkArrayIndexOrSlice :: Name -> RichExp -> SrcLoc -> P Name
-checkArrayIndexOrSlice n (ParensR [re] _) l =
-    SliceN n <$> checkDiscreteRange re <*> pure l
+checkArrayIndexOrSlice :: Name -> [RichExp] -> SrcLoc -> P Name
+checkArrayIndexOrSlice n [re] l =
+    checkSlice `catch` \(_ :: ParserException) -> checkIndexed
+  where
+    checkSlice, checkIndexed :: P Name
+    checkSlice   = SliceN n <$> checkDiscreteRange re <*> pure l
+    checkIndexed = IndexedN n <$> ((:[]) <$> checkExp re) <*> pure l
 
-checkArrayIndexOrSlice n (ParensR res _) l = do
+checkArrayIndexOrSlice n res l = do
     es <- mapM checkExp res
     pure $ IndexedN n es l
 
-checkArrayIndexOrSlice _ re _ =
-    parserError re $ text "Expected array index but got" <+> ppr re
+checkArrayIndexOrSlice _ res l =
+    parserError res $ text "Expected array index but got" <+> ppr (ParensR res l)
 
 checkGenerateSpec :: RichExp -> P GenSpec
 checkGenerateSpec (ExpR (VarE (SimpleN [] ident l) _)) =

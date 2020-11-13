@@ -25,6 +25,7 @@ spec = do
     decimalLiteralTests
     basedLiteralTests
     expressionTests
+    statementTests
 
 decimalLiteralTests :: Spec
 decimalLiteralTests =
@@ -94,6 +95,17 @@ expressionTests =
   where
     one :: Exp
     one = [vexp|1|]
+
+statementTests :: Spec
+statementTests =
+    describe "Statement antiquote tests" $ do
+      it "Indexed array assignment" $
+        [vstm|x(0) := y;|] @?= [vstm|x($zero) := y;|]
+      it "Assignment from slice" $
+        [vstm|x := y(n-1 downto 0);|] @?= [vstm|x := y(n-1 downto $zero);|]
+  where
+    zero :: Exp
+    zero = [vexp|0|]
 
 isIntLit :: Lit -> Integer -> Assertion
 isIntLit (IntLit _ i _) i' = i @?= i'
