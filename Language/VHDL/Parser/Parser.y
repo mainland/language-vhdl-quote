@@ -3514,12 +3514,24 @@ process_statement :
       sequence_of_statements
     'end' postponed_opt 'process' label_opt ';'
       { ProcessS (False || $8) $2 (rev $4) $6 ($1 `srcspan` $11) }
+  | 'process' process_sensitivity_list_opt is_opt
+      declarations_rlist
+    'begin'
+      sequence_of_statements
+    'end' postponed_opt error
+      {% expected ["`process`"] Nothing }
   | 'postponed' 'process' process_sensitivity_list_opt is_opt
       declarations_rlist
     'begin'
       sequence_of_statements
     'end' postponed_opt 'process' label_opt ';'
       { ProcessS True $3 (rev $5) $7 ($2 `srcspan` $12) }
+  | 'postponed' 'process' process_sensitivity_list_opt is_opt
+      declarations_rlist
+    'begin'
+      sequence_of_statements
+    'end' postponed_opt error
+      {% expected ["`process`"] Nothing }
 
 process_sensitivity_list_opt :: { Maybe ProcessSensitivityList }
 process_sensitivity_list_opt :
