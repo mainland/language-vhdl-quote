@@ -230,7 +230,7 @@ import Language.VHDL.Syntax hiding (L)
 %left '**' 'abs' 'not'
 %left LABEL
 
---%expect 0
+%expect 0
 
 %monad { P } { >>= } { return }
 %lexer { lexer } { L _ T.Teof }
