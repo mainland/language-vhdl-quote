@@ -247,6 +247,7 @@ import Language.VHDL.Syntax hiding (L)
 %name parseExp only_expression
 %name parseStm sequential_statement
 %name parseCStm concurrent_statement
+%name parseAssocs association_list
 
 %%
 {-

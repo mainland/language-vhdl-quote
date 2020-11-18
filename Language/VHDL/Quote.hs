@@ -26,6 +26,7 @@ module Language.VHDL.Quote (
     vcstm,
     vdecl,
     videcl,
+    vassocs,
     vunit,
     vfile
   ) where
@@ -141,6 +142,9 @@ vlit = qq P.parseLit
 
 vexp :: QuasiQuoter
 vexp = qq P.parseExp
+
+vassocs :: QuasiQuoter
+vassocs = qq P.parseAssocs
 
 vstm :: QuasiQuoter
 vstm = qq P.parseStm

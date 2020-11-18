@@ -26,6 +26,7 @@ spec = do
     basedLiteralTests
     expressionTests
     statementTests
+    associationTests
 
 decimalLiteralTests :: Spec
 decimalLiteralTests =
@@ -135,6 +136,19 @@ statementTests =
 
     one :: Exp
     one = [vexp|1|]
+
+associationTests :: Spec
+associationTests =
+    describe "Association list antiquote tests" $ do
+      it "Associations" $
+        [vassocs|clk => clk, ce => ce|] @?= [vassocs|clk => clk, ce => ce|]
+  where
+    zero :: Exp
+    zero = [vexp|0|]
+
+    one :: Exp
+    one = [vexp|1|]
+
 
 isIntLit :: Lit -> Integer -> Assertion
 isIntLit (IntLit _ i _) i' = i @?= i'
