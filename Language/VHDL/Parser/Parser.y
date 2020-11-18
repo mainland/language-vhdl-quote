@@ -2568,23 +2568,28 @@ primary :
   | 'others'
       { OthersR (srclocOf $1) }
 
-expression_rlist :: { RevList RichExp }
-expression_rlist :
+expression_rlist_elem :: { RichExp }
+expression_rlist_elem :
     expression
-      { rsingleton $1 }
+      { $1 }
   | 'inertial' expression
-      {% do { e <- checkExp  $2
-            ; pure $ rsingleton $ InertialR e ($1 `srcspan` $2)
+      {% do { e <- checkExp $2
+            ; pure $ InertialR e ($1 `srcspan` $2)
             }
       }
-  | ANTI_LITS
-      { rsingleton $ AntiLitsR (getANTI_LITS $1) (srclocOf $1) }
-  | ANTI_EXPS
-      { rsingleton $ AntiExpsR (getANTI_EXPS $1) (srclocOf $1) }
   | expression '=>' expression
-      { rsingleton $ AssocR $1 $3 ($1 `srcspan` $3) }
-  | expression_rlist ',' expression
-     { rcons $3 $1 }
+      { AssocR $1 $3 ($1 `srcspan` $3) }
+  | ANTI_LITS
+      { AntiLitsR (getANTI_LITS $1) (srclocOf $1) }
+  | ANTI_EXPS
+      { AntiExpsR (getANTI_EXPS $1) (srclocOf $1) }
+
+expression_rlist :: { RevList RichExp }
+expression_rlist :
+    expression_rlist_elem
+      { rsingleton $1 }
+  | expression_rlist ',' expression_rlist_elem
+      { rcons $3 $1 }
 
 {-
 [§ 9.3.2]
