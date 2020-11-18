@@ -2523,7 +2523,8 @@ concurrent_statement ::=
   | PSL_PSL_Directive
 -}
 
-data CStm = BlockS (Maybe Cond) (Maybe GenHeader) (Maybe PortHeader) [Decl] [CStm] !SrcLoc
+data CStm = LabelCS Label CStm !SrcLoc
+          | BlockS (Maybe Cond) (Maybe GenHeader) (Maybe PortHeader) [Decl] [CStm] !SrcLoc
           | ProcessS Bool (Maybe ProcessSensitivityList) [Decl] [Stm] !SrcLoc
           | ConcCallS Bool Name [Arg] !SrcLoc
           | ConcAssertS Bool Cond (Maybe Exp) (Maybe Exp) !SrcLoc
@@ -2537,6 +2538,10 @@ data CStm = BlockS (Maybe Cond) (Maybe GenHeader) (Maybe PortHeader) [Decl] [CSt
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty CStm where
+    ppr (LabelCS lbl cstm _) =
+        nest 2 $
+        ppr lbl <> colon <+/> ppr cstm
+
     ppr (BlockS cond gens ports decls stms _) =
         nest 2 (text "block" <+> pprCond cond <+> text "is" <+/>
                 ppr gens </> ppr ports </> ppr decls) </>

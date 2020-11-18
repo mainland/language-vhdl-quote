@@ -2729,21 +2729,22 @@ sequential_statement ::=
 
 sequential_statement :: { Stm }
 sequential_statement :
-    wait_statement                { $1 }
-  | assertion_statement           { $1 }
-  | report_statement              { $1 }
-  | signal_assignment_statement   { $1 }
-  | variable_assignment_statement { $1 }
-  | procedure_call_statement      { $1 }
-  | if_statement                  { $1 }
-  | case_statement                { $1 }
-  | loop_statement                { $1 }
-  | next_statement                { $1 }
-  | exit_statement                { $1 }
-  | return_statement              { $1 }
-  | null_statement                { $1 }
-  | ANTI_STM                      { AntiStm (getANTI_STM $1) (srclocOf $1) }
-  | ANTI_STMS                     { AntiStms (getANTI_STMS $1) (srclocOf $1) }
+    identifier ':' sequential_statement { LabelS $1 $3 ($1 `srcspan` $3) }
+  | wait_statement                      { $1 }
+  | assertion_statement                 { $1 }
+  | report_statement                    { $1 }
+  | signal_assignment_statement         { $1 }
+  | variable_assignment_statement       { $1 }
+  | procedure_call_statement            { $1 }
+  | if_statement                        { $1 }
+  | case_statement                      { $1 }
+  | loop_statement                      { $1 }
+  | next_statement                      { $1 }
+  | exit_statement                      { $1 }
+  | return_statement                    { $1 }
+  | null_statement                      { $1 }
+  | ANTI_STM                            { AntiStm (getANTI_STM $1) (srclocOf $1) }
+  | ANTI_STMS                           { AntiStms (getANTI_STMS $1) (srclocOf $1) }
 
 sequence_of_statements :: { [Stm] }
 sequence_of_statements : sequential_statement_rlist { rev $1 }
@@ -3387,7 +3388,8 @@ concurrent_statement ::=
 
 concurrent_statement :: { CStm }
 concurrent_statement :
-    block_statement                        { $1 }
+    identifier ':' concurrent_statement    { LabelCS $1 $3 ($1 `srcspan` $3) }
+  | block_statement                        { $1 }
   | process_statement                      { $1 }
   | concurrent_procedure_call_statement    { $1 }
   | concurrent_assertion_statement         { $1 }

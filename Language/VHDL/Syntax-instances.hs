@@ -13,6 +13,7 @@ instance Located BindingIndication where
   locOf (EntityB _ _ _ l) = locOf l
   locOf (VerifB _ l) = locOf l
 instance Located CStm where
+  locOf (LabelCS _ _ l) = locOf l
   locOf (BlockS _ _ _ _ _ l) = locOf l
   locOf (ProcessS _ _ _ _ l) = locOf l
   locOf (ConcCallS _ _ _ l) = locOf l
