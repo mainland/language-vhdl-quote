@@ -109,7 +109,7 @@ dist/build/autogen/cabal_macros.h :
 #
 # Generated instances
 #
-Language/VHDL/Syntax-instances.hs : bin/gen-instances.hs bin/Derive.hs
+Language/VHDL/Syntax-instances.hs : bin/gen-instances.hs bin/Derive.hs Language/VHDL/Syntax.hs
 	$(RUNGHC) $(RUNGHCFLAGS) -ibin -DONLY_TYPEDEFS $< > $@ || rm -f $@
 
 #
