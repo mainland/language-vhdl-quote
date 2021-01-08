@@ -224,6 +224,24 @@ qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
 
+qqDeclE :: V.Decl -> Maybe ExpQ
+qqDeclE (V.AntiDecl decl _) = Just $ antiExpQ decl
+qqDeclE _                   = Nothing
+
+qqDeclsE :: [V.Decl] -> Maybe ExpQ
+qqDeclsE []                        = Just [|[]|]
+qqDeclsE (V.AntiDecls v _ : decls) = Just [|$(antiExpQ v) ++ $(dataToExpQ qqExp decls)|]
+qqDeclsE (decl : decls)            = Just [|$(dataToExpQ qqExp decl) : $(dataToExpQ qqExp decls)|]
+
+qqIDeclE :: V.IDecl -> Maybe ExpQ
+qqIDeclE (V.AntiIDecl idecl _) = Just $ antiExpQ idecl
+qqIDeclE _                     = Nothing
+
+qqIDeclsE :: [V.IDecl] -> Maybe ExpQ
+qqIDeclsE []                          = Just [|[]|]
+qqIDeclsE (V.AntiIDecls v _ : idecls) = Just [|$(antiExpQ v) ++ $(dataToExpQ qqExp idecls)|]
+qqIDeclsE (idecl : idecls)            = Just [|$(dataToExpQ qqExp idecl) : $(dataToExpQ qqExp idecls)|]
+
 qqStmE :: V.Stm -> Maybe ExpQ
 qqStmE (V.AntiStm stm _) = Just $ antiExpQ stm
 qqStmE _                 = Nothing
@@ -262,6 +280,10 @@ qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqLitE
                       `extQ` qqIdE
                       `extQ` qqExpE
+                      `extQ` qqDeclE
+                      `extQ` qqDeclsE
+                      `extQ` qqIDeclE
+                      `extQ` qqIDeclsE
                       `extQ` qqStmE
                       `extQ` qqStmsE
                       `extQ` qqCStmE

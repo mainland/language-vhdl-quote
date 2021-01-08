@@ -95,19 +95,23 @@ $basic_char    = [$basic_graphic]
 
 vhdl :-
 <0> {
-  "$"       / { allowAnti } { lexAnti Tanti_exp }
-  "$id:"    / { allowAnti } { lexAnti Tanti_id }
-  "$exp:"   / { allowAnti } { lexAnti Tanti_exp }
-  "$exps:"  / { allowAnti } { lexAnti Tanti_exps }
-  "$int:"   / { allowAnti } { lexAnti Tanti_int }
-  "$real:"  / { allowAnti } { lexAnti Tanti_real }
-  "$lit:"   / { allowAnti } { lexAnti Tanti_lit }
-  "$lits:"  / { allowAnti } { lexAnti Tanti_lits }
-  "$stm:"   / { allowAnti } { lexAnti Tanti_stm }
-  "$stms:"  / { allowAnti } { lexAnti Tanti_stms }
-  "$cstm:"  / { allowAnti } { lexAnti Tanti_cstm }
-  "$cstms:" / { allowAnti } { lexAnti Tanti_cstms }
-  "$ty:"    / { allowAnti } { lexAnti Tanti_type }
+  "$"        / { allowAnti } { lexAnti Tanti_exp }
+  "$id:"     / { allowAnti } { lexAnti Tanti_id }
+  "$exp:"    / { allowAnti } { lexAnti Tanti_exp }
+  "$exps:"   / { allowAnti } { lexAnti Tanti_exps }
+  "$int:"    / { allowAnti } { lexAnti Tanti_int }
+  "$real:"   / { allowAnti } { lexAnti Tanti_real }
+  "$lit:"    / { allowAnti } { lexAnti Tanti_lit }
+  "$lits:"   / { allowAnti } { lexAnti Tanti_lits }
+  "$decl:"   / { allowAnti } { lexAnti Tanti_decl }
+  "$decls:"  / { allowAnti } { lexAnti Tanti_decls }
+  "$idecl:"  / { allowAnti } { lexAnti Tanti_idecl }
+  "$idecls:" / { allowAnti } { lexAnti Tanti_idecls }
+  "$stm:"    / { allowAnti } { lexAnti Tanti_stm }
+  "$stms:"   / { allowAnti } { lexAnti Tanti_stms }
+  "$cstm:"   / { allowAnti } { lexAnti Tanti_cstm }
+  "$cstms:"  / { allowAnti } { lexAnti Tanti_cstms }
+  "$ty:"     / { allowAnti } { lexAnti Tanti_type }
 }
 
 <0> {

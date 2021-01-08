@@ -615,6 +615,8 @@ data Decl = EntityD Id (Maybe GenericClause) (Maybe PortClause) [Decl] [CStm] !S
           | DisconnectD SignalList TypeMark Exp !SrcLoc
           | ContextD Id [Context] !SrcLoc
           | UseD UseClause !SrcLoc
+          | AntiDecl String !SrcLoc
+          | AntiDecls String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty Decl where
@@ -765,6 +767,12 @@ instance Pretty Decl where
 
     ppr (UseD use _) =
         ppr use
+
+    ppr (AntiDecl decl _) =
+        pprAnti "decl" decl
+
+    ppr (AntiDecls decls _) =
+        pprAnti "decls" decls
 
     pprList = semistackall . map ppr
 
@@ -1046,6 +1054,8 @@ data IDecl = ConstID [Id] Subtype (Maybe Exp) !SrcLoc
            | ProcID Name [IDecl] (Maybe InterfaceSubprogramDefault) !SrcLoc
            | FunID Name (Maybe Purity) [IDecl] TypeMark (Maybe InterfaceSubprogramDefault) !SrcLoc
            | PkgInstID Id Name IfaceGenericMapAspect !SrcLoc
+           | AntiIDecl String !SrcLoc
+           | AntiIDecls String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty IDecl where
@@ -1090,6 +1100,12 @@ instance Pretty IDecl where
 
     ppr (PkgInstID ident n genmap _) =
       text "package" <+> ppr ident <+> text "is new" <+> ppr n <+> ppr genmap
+
+    ppr (AntiIDecl idecl _) =
+        pprAnti "idecl" idecl
+
+    ppr (AntiIDecls idecls _) =
+        pprAnti "idecls" idecls
 
     pprList = semistack . map ppr
 

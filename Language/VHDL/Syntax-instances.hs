@@ -71,6 +71,8 @@ instance Located Decl where
   locOf (DisconnectD _ _ _ l) = locOf l
   locOf (ContextD _ _ l) = locOf l
   locOf (UseD _ l) = locOf l
+  locOf (AntiDecl _ l) = locOf l
+  locOf (AntiDecls _ l) = locOf l
 instance Located DelayMechanism where
   locOf (Transport l) = locOf l
   locOf (Inertial _ l) = locOf l
@@ -118,6 +120,8 @@ instance Located IDecl where
   locOf (ProcID _ _ _ l) = locOf l
   locOf (FunID _ _ _ _ _ l) = locOf l
   locOf (PkgInstID _ _ _ l) = locOf l
+  locOf (AntiIDecl _ l) = locOf l
+  locOf (AntiIDecls _ l) = locOf l
 instance Located Id where
   locOf (Id _ l) = locOf l
   locOf (ExtId _ l) = locOf l

@@ -204,18 +204,22 @@ import Language.VHDL.Syntax hiding (L)
   '?>=' { L _ T.Tmatch_ge }
   '?>'  { L _ T.Tmatch_gt }
 
-  ANTI_ID    { L _ T.Tanti_id{} }
-  ANTI_EXP   { L _ T.Tanti_exp{} }
-  ANTI_EXPS  { L _ T.Tanti_exps{} }
-  ANTI_INT   { L _ T.Tanti_int{} }
-  ANTI_REAL  { L _ T.Tanti_real{} }
-  ANTI_LIT   { L _ T.Tanti_lit{} }
-  ANTI_LITS  { L _ T.Tanti_lits{} }
-  ANTI_STM   { L _ T.Tanti_stm{} }
-  ANTI_STMS  { L _ T.Tanti_stms{} }
-  ANTI_CSTM  { L _ T.Tanti_cstm{} }
-  ANTI_CSTMS { L _ T.Tanti_cstms{} }
-  ANTI_TYPE  { L _ T.Tanti_type{} }
+  ANTI_ID     { L _ T.Tanti_id{} }
+  ANTI_EXP    { L _ T.Tanti_exp{} }
+  ANTI_EXPS   { L _ T.Tanti_exps{} }
+  ANTI_INT    { L _ T.Tanti_int{} }
+  ANTI_REAL   { L _ T.Tanti_real{} }
+  ANTI_LIT    { L _ T.Tanti_lit{} }
+  ANTI_LITS   { L _ T.Tanti_lits{} }
+  ANTI_DECL   { L _ T.Tanti_decl{} }
+  ANTI_DECLS  { L _ T.Tanti_decls{} }
+  ANTI_IDECL  { L _ T.Tanti_idecl{} }
+  ANTI_IDECLS { L _ T.Tanti_idecls{} }
+  ANTI_STM    { L _ T.Tanti_stm{} }
+  ANTI_STMS   { L _ T.Tanti_stms{} }
+  ANTI_CSTM   { L _ T.Tanti_cstm{} }
+  ANTI_CSTMS  { L _ T.Tanti_cstms{} }
+  ANTI_TYPE   { L _ T.Tanti_type{} }
 
 %left DIRECTION
 %left '??'
@@ -1239,6 +1243,8 @@ declaration :
   | disconnection_specification { $1 }
   | context_declaration         { $1 }
   | use_clause                  { UseD $1 (srclocOf $1) }
+  | ANTI_DECL                   { AntiDecl (getANTI_DECL $1) (srclocOf $1) }
+  | ANTI_DECLS                  { AntiDecls (getANTI_DECLS $1) (srclocOf $1) }
 
 declarations_rlist :: { RevList Decl }
 declarations_rlist :
@@ -1536,6 +1542,8 @@ interface_declaration :
   | interface_type_declaration       { $1 }
   | interface_subprogram_declaration { $1 }
   | interface_package_declaration    { $1 }
+  | ANTI_IDECL                       { AntiIDecl (getANTI_IDECL $1) (srclocOf $1) }
+  | ANTI_IDECLS                      { AntiIDecls (getANTI_IDECLS $1) (srclocOf $1) }
 
 interface_object_declaration :: { IDecl }
 interface_object_declaration :
@@ -4104,6 +4112,18 @@ getANTI_LIT (L _ (T.Tanti_lit e)) = e
 
 getANTI_LITS :: L T.Token -> String
 getANTI_LITS (L _ (T.Tanti_lits e)) = e
+
+getANTI_DECL :: L T.Token -> String
+getANTI_DECL (L _ (T.Tanti_decl decl)) = decl
+
+getANTI_DECLS :: L T.Token -> String
+getANTI_DECLS (L _ (T.Tanti_decls decls)) = decls
+
+getANTI_IDECL :: L T.Token -> String
+getANTI_IDECL (L _ (T.Tanti_idecl idecl)) = idecl
+
+getANTI_IDECLS :: L T.Token -> String
+getANTI_IDECLS (L _ (T.Tanti_idecls idecls)) = idecls
 
 getANTI_STM :: L T.Token -> String
 getANTI_STM (L _ (T.Tanti_stm stm)) = stm
