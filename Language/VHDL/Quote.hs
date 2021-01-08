@@ -17,9 +17,11 @@
 module Language.VHDL.Quote (
     ToLit(..),
     ToId(..),
+    ToName(..),
     ToExp(..),
     ToType(..),
     vtype,
+    vname,
     vlit,
     vexp,
     vstm,
@@ -86,7 +88,20 @@ instance ToId V.Id where
     toId ident _ = ident
 
 instance ToId String where
-    toId ident l = V.Id (V.mkNoCase (intern ident)) l
+    toId s l = V.Id (V.mkNoCase (intern s)) l
+
+-- | An instance of 'ToName' can be converted to a 'V.Name'.
+class ToName a where
+    toName :: a -> SrcLoc -> V.Name
+
+instance ToName V.Name where
+    toName n _ = n
+
+instance ToName V.Id where
+    toName ident l = V.SimpleN [] ident l
+
+instance ToName String where
+    toName s l = V.SimpleN [] (toId s l) l
 
 -- | An instance of 'ToExp' can be converted to a 'V.Exp'.
 class ToExp a where
@@ -136,6 +151,9 @@ qq = quasiquote defaultExtensions defaultTypes
 
 vtype :: QuasiQuoter
 vtype = qq P.parseType
+
+vname :: QuasiQuoter
+vname = qq P.parseName
 
 vlit :: QuasiQuoter
 vlit = qq P.parseLit
@@ -220,6 +238,10 @@ qqIdE :: V.Id -> Maybe ExpQ
 qqIdE (V.AntiId e loc) = Just [|toId $(antiExpQ e) $(qqLocE loc) :: V.Id|]
 qqIdE _                = Nothing
 
+qqNameE :: V.Name -> Maybe ExpQ
+qqNameE (V.AntiName v loc) = Just [|toName $(antiExpQ v) $(qqLocE loc) :: V.Name|]
+qqNameE _                  = Nothing
+
 qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
@@ -279,6 +301,7 @@ qqExp :: Typeable a => a -> Maybe ExpQ
 qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqLitE
                       `extQ` qqIdE
+                      `extQ` qqNameE
                       `extQ` qqExpE
                       `extQ` qqDeclE
                       `extQ` qqDeclsE

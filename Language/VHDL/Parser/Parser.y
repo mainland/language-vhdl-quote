@@ -205,6 +205,7 @@ import Language.VHDL.Syntax hiding (L)
   '?>'  { L _ T.Tmatch_gt }
 
   ANTI_ID     { L _ T.Tanti_id{} }
+  ANTI_NAME   { L _ T.Tanti_name{} }
   ANTI_EXP    { L _ T.Tanti_exp{} }
   ANTI_EXPS   { L _ T.Tanti_exps{} }
   ANTI_INT    { L _ T.Tanti_int{} }
@@ -2204,6 +2205,8 @@ name :
 -}
   | external_name
       { $1 }
+  | ANTI_NAME
+      {AntiName (getANTI_NAME $1) (srclocOf $1) }
 
 name_ :: { [Id] -> Name }
 name_ :
@@ -4094,6 +4097,9 @@ getOPERATOR (L _ (T.Toperator x)) = x
 
 getANTI_ID :: L T.Token -> String
 getANTI_ID (L _ (T.Tanti_id ident)) = ident
+
+getANTI_NAME :: L T.Token -> String
+getANTI_NAME (L _ (T.Tanti_name n)) = n
 
 getANTI_EXP :: L T.Token -> String
 getANTI_EXP (L _ (T.Tanti_exp e)) = e

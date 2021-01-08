@@ -198,6 +198,7 @@ data Token = Teof
            | Tmatch_gt -- ^ @?>@
 
            | Tanti_id String
+           | Tanti_name String
            | Tanti_int String
            | Tanti_real String
            | Tanti_char String
@@ -406,6 +407,7 @@ instance Pretty Token where
     ppr Tmatch_gt = text "?>"
 
     ppr (Tanti_id e)        = pprAnti "id" e
+    ppr (Tanti_name e)      = pprAnti "name" e
     ppr (Tanti_int e)       = pprAnti "int" e
     ppr (Tanti_real e)      = pprAnti "real" e
     ppr (Tanti_char e)      = pprAnti "char" e

@@ -1573,6 +1573,7 @@ data Name = SimpleN [Id] Id !SrcLoc
           | ExtConstN ExtPath Subtype !SrcLoc
           | ExtSigN ExtPath Subtype !SrcLoc
           | ExtVarN ExtPath Subtype !SrcLoc
+          | AntiName String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance IsString Name where
@@ -1618,6 +1619,9 @@ instance Pretty Name where
         text "<<" <> text "variable" <+>
         ppr path <+> colon <+> ppr subty <>
         text ">>"
+
+    ppr (AntiName e _) =
+        pprAnti "name" e
 
 data NameList a = Some [a] !SrcLoc
                 | Others !SrcLoc
