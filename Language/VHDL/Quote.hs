@@ -43,13 +43,22 @@ import Data.Symbol ( intern )
 import qualified Data.Text.Lazy as T
 import Data.Typeable (Typeable)
 #ifdef FULL_HASKELL_ANTIQUOTES
-import Language.Haskell.Meta (parseExp,
-                              parsePat)
+import Language.Haskell.Exts.Extension (Extension(..),
+                                        KnownExtension(..),
+                                        Language(..))
+import Language.Haskell.Exts.Parser (ParseMode(..),
+                                     defaultParseMode,
+                                     parseExpWithMode,
+                                     parsePatWithMode)
+import qualified Language.Haskell.Exts.SrcLoc as Hs
+import qualified Language.Haskell.Exts.Syntax as Hs
+import Language.Haskell.Meta (parseResultToEither)
+import qualified Language.Haskell.Meta as Meta
 #else /* !defined(FULL_HASKELL_ANTIQUOTES) */
 import Language.Haskell.ParseExp (parseExp,
                                   parsePat)
 #endif /* !defined(FULL_HASKELL_ANTIQUOTES) */
-import Language.Haskell.TH
+import Language.Haskell.TH hiding (Extension(..))
 import Language.Haskell.TH.Quote (QuasiQuoter(..),
                                   dataToExpQ,
                                   dataToPatQ)
@@ -57,6 +66,42 @@ import Language.Haskell.TH.Quote (QuasiQuoter(..),
 import Language.VHDL.Parser
 import qualified Language.VHDL.Parser.Parser as P
 import qualified Language.VHDL.Syntax as V
+
+#ifdef FULL_HASKELL_ANTIQUOTES
+parseMode :: ParseMode
+parseMode = defaultParseMode
+  { parseFilename = []
+  , baseLanguage = Haskell2010
+  , extensions = map EnableExtension defaultExtensions :: [Extension]
+  }
+  where
+    defaultExtensions :: [KnownExtension]
+    defaultExtensions = [ DataKinds
+                        , ForeignFunctionInterface
+                        , MagicHash
+                        , MultiParamTypeClasses
+                        , PatternSignatures
+                        , PostfixOperators
+                        , RankNTypes
+                        , RecursiveDo
+                        , QuasiQuotes
+                        , TemplateHaskell
+                        , TypeApplications
+                        , UnicodeSyntax
+                        ]
+
+parsePat :: String -> Either String Pat
+parsePat = either Left (Right . Meta.toPat) . parseHsPat
+
+parseExp :: String -> Either String Exp
+parseExp = either Left (Right . Meta.toExp) . parseHsExp
+
+parseHsExp :: String -> Either String (Hs.Exp Hs.SrcSpanInfo)
+parseHsExp = parseResultToEither . parseExpWithMode parseMode
+
+parseHsPat :: String -> Either String (Hs.Pat Hs.SrcSpanInfo)
+parseHsPat = parseResultToEither . parsePatWithMode parseMode
+#endif /* !defined(FULL_HASKELL_ANTIQUOTES) */
 
 -- | An instance of 'ToLit' can be converted to a 'V.Lit'.
 class ToLit a where
