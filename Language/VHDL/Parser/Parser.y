@@ -206,6 +206,7 @@ import Language.VHDL.Syntax hiding (L)
 
   ANTI_ID     { L _ T.Tanti_id{} }
   ANTI_NAME   { L _ T.Tanti_name{} }
+  ANTI_NAMES  { L _ T.Tanti_names{} }
   ANTI_EXP    { L _ T.Tanti_exp{} }
   ANTI_EXPS   { L _ T.Tanti_exps{} }
   ANTI_INT    { L _ T.Tanti_int{} }
@@ -2207,6 +2208,8 @@ name :
       { $1 }
   | ANTI_NAME
       {AntiName (getANTI_NAME $1) (srclocOf $1) }
+  | ANTI_NAMES
+      {AntiNames (getANTI_NAMES $1) (srclocOf $1) }
 
 name_ :: { [Id] -> Name }
 name_ :
@@ -4100,6 +4103,9 @@ getANTI_ID (L _ (T.Tanti_id ident)) = ident
 
 getANTI_NAME :: L T.Token -> String
 getANTI_NAME (L _ (T.Tanti_name n)) = n
+
+getANTI_NAMES :: L T.Token -> String
+getANTI_NAMES (L _ (T.Tanti_names n)) = n
 
 getANTI_EXP :: L T.Token -> String
 getANTI_EXP (L _ (T.Tanti_exp e)) = e

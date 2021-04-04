@@ -98,6 +98,7 @@ vhdl :-
   "$"        / { allowAnti } { lexAnti Tanti_exp }
   "$id:"     / { allowAnti } { lexAnti Tanti_id }
   "$name:"   / { allowAnti } { lexAnti Tanti_name }
+  "$names:"  / { allowAnti } { lexAnti Tanti_names }
   "$exp:"    / { allowAnti } { lexAnti Tanti_exp }
   "$exps:"   / { allowAnti } { lexAnti Tanti_exps }
   "$int:"    / { allowAnti } { lexAnti Tanti_int }

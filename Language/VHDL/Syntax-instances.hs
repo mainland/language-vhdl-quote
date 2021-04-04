@@ -164,6 +164,7 @@ instance Located Name where
   locOf (ExtSigN _ _ l) = locOf l
   locOf (ExtVarN _ _ l) = locOf l
   locOf (AntiName _ l) = locOf l
+  locOf (AntiNames _ l) = locOf l
 instance Located (NameList a) where
   locOf (Some _ l) = locOf l
   locOf (Others l) = locOf l

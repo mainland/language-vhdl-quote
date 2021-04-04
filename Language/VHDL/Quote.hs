@@ -287,6 +287,11 @@ qqNameE :: V.Name -> Maybe ExpQ
 qqNameE (V.AntiName v loc) = Just [|toName $(antiExpQ v) $(qqLocE loc) :: V.Name|]
 qqNameE _                  = Nothing
 
+qqNamesE :: [V.Name] -> Maybe ExpQ
+qqNamesE []                     = Just [|[]|]
+qqNamesE (V.AntiNames v _ : ns) = Just [|$(antiExpQ v) ++ $(dataToExpQ qqExp ns)|]
+qqNamesE (n : ns)               = Just [|$(dataToExpQ qqExp n) : $(dataToExpQ qqExp ns)|]
+
 qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
@@ -347,6 +352,7 @@ qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqLitE
                       `extQ` qqIdE
                       `extQ` qqNameE
+                      `extQ` qqNamesE
                       `extQ` qqExpE
                       `extQ` qqDeclE
                       `extQ` qqDeclsE
