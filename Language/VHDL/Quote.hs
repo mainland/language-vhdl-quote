@@ -193,6 +193,7 @@ qq = quasiquote defaultExtensions defaultTypes
       , "Natural"
       , "std_logic"
       , "std_logic_vector"
+      , "integer"
       , "sfixed"
       , "ufixed"
       ]
