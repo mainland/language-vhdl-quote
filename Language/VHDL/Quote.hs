@@ -152,6 +152,9 @@ instance ToName String where
 class ToExp a where
     toExp :: a -> SrcLoc -> V.Exp
 
+instance ToExp V.Id where
+    toExp n l = V.VarE (toName n l) l
+
 instance ToExp V.Exp where
     toExp e _ = e
 
