@@ -3046,6 +3046,11 @@ conditional_waveforms :: { Conditional Waveform }
 conditional_waveforms :
     waveform 'when' condition
       { Conditional [($1, $3)] Nothing ($1 `srcspan` $3)}
+  | waveform 'when' condition 'else' conditional_waveforms
+      { let { Conditional clauses fin _ = $5 }
+        in
+          Conditional (($1, $3) : clauses) fin ($1 `srcspan` $5)
+      }
   | waveform 'when' condition 'else' waveform
       { Conditional [($1, $3)] (Just $5) ($1 `srcspan` $5)}
 
@@ -3059,6 +3064,12 @@ conditional_expressions :
     expression 'when' condition
       {% do { e <- checkExp $1
             ; pure $ Conditional [(e, $3)] Nothing ($1 `srcspan` $3)
+            }
+      }
+  | expression 'when' condition 'else' conditional_expressions
+      {% do { e <- checkExp $1
+            ; let Conditional clauses fin _ = $5
+            ; pure $ Conditional ((e, $3) : clauses) fin ($1 `srcspan` $5)
             }
       }
   | expression 'when' condition 'else' expression
