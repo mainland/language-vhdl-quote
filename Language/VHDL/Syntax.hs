@@ -3086,7 +3086,7 @@ pprAnti :: Pretty a => String -> a -> Doc
 pprAnti anti x = char '$' <> text anti <> colon <> ppr x
 
 elsesep :: [Doc] -> Doc
-elsesep = align . sep . punctuate (text "else")
+elsesep = align . sep . punctuate (space <> text "else")
 
 pprParams :: Pretty a => [a] -> Doc
 pprParams params = parens (semisep (map ppr params))
