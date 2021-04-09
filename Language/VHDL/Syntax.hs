@@ -3115,7 +3115,8 @@ punctuateAll p (d:ds) = (d <> p) : punctuateAll p ds
 -- | The document @'semistack' ds@ semicolon-stacks @ds@, aligning the
 -- resulting document to the current nesting level.
 semistackall :: [Doc] -> Doc
-semistackall = align . stack . punctuateAll semi
+semistackall [] = empty
+semistackall xs = (align . stack . punctuateAll semi) xs
 
 -- | The document @'semistack' ds@ semicolon-stacks @ds@, aligning the
 -- resulting document to the current nesting level.
