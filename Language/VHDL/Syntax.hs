@@ -3143,14 +3143,14 @@ pprGuarded a b = ppr a <+> text "when" <+> ppr b
 
 pprIsEnd :: Doc -> Doc -> Doc
 pprIsEnd is decls =
-  nest 2 (is <+> text "is" </> decls) </>
-  text "end"
+    nest 2 (is <+> text "is" </> decls) </>
+    text "end"
 
 pprIsBeginEnd :: Doc -> Doc -> Doc -> Maybe Doc -> Doc
 pprIsBeginEnd is decls body close =
-  nest 2 (is <+> text "is" </> decls) </>
-  nest 2 (text "begin" </> body) </>
-  text "end" <+> ppr close
+    nest 2 (is <+> text "is" </> decls) </>
+    nest 2 (text "begin" </> body) </>
+    text "end" <+> ppr close
 
 pprFor :: Doc -> [Doc] -> Doc
 pprFor arg body =
