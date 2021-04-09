@@ -1757,6 +1757,50 @@ instance Pretty Exp where
         parensIf (p > precOf op) $
         ppr op <> pprPrec (precOf op) e
 
+    -- nand and nor expressions must always be parenthesized
+    pprPrec _ (BinopE op e1 e2 _s) | isNotLogicalOp op =
+        infixop (opPrec+1) op e1 e2
+      where
+        isNotLogicalOp :: Binop -> Bool
+        isNotLogicalOp Nand = True
+        isNotLogicalOp Nor  = True
+        isNotLogicalOp _    = False
+
+        Fixity _ opPrec = fixity op
+
+    -- and, or, xor, and xnor expressions must be parenthesized when they are
+    -- the subterm of a logical expression with same same precedence but a
+    -- *different* operator.
+    pprPrec p (BinopE op e1 e2 _s) | isLogicalOp op =
+        infixop' e1 e2
+      where
+        isLogicalOp :: Binop -> Bool
+        isLogicalOp And  = True
+        isLogicalOp Or   = True
+        isLogicalOp Xor  = True
+        isLogicalOp Xnor = True
+        isLogicalOp _    = False
+
+        infixop' :: Exp -> Exp -> Doc
+        infixop' l r =
+            parensIf (p > opPrec) $
+            pprPrec leftPrec l <+> ppr op <+/> pprPrec rightPrec r
+          where
+            leftPrec | opAssoc == RightAssoc = opPrec + 1
+                     | otherwise             = opPrec + bias l
+
+            rightPrec | opAssoc == LeftAssoc = opPrec + 1
+                      | otherwise            = opPrec + bias r
+
+            Fixity opAssoc opPrec = fixity op
+
+        -- Add precedence bias if we encounter a sub-expression involving a
+        -- *different* logical operator to force subexpression to be
+        -- parenthesized.
+        bias :: Exp -> Int
+        bias (BinopE op' _ _ _) | isLogicalOp op && op' /= op = 1
+        bias _                                                = 0
+
     pprPrec p (BinopE op e1 e2 _s) =
         infixop p op e1 e2
 
