@@ -1877,12 +1877,12 @@ data Binop = And
   deriving (Eq, Ord, Enum, Show, Data, Typeable)
 
 instance HasFixity Binop where
-    fixity And  = infixl_ 1
-    fixity Or   = infixl_ 1
-    fixity Nand = infixl_ 1
-    fixity Nor  = infixl_ 1
-    fixity Xor  = infixl_ 1
-    fixity Xnor = infixl_ 1
+    fixity And  = infixr_ 1
+    fixity Or   = infixr_ 1
+    fixity Nand = infixr_ 1
+    fixity Nor  = infixr_ 1
+    fixity Xor  = infixr_ 1
+    fixity Xnor = infixr_ 1
     fixity Eq   = infixl_ 2
     fixity Ne   = infixl_ 2
     fixity Lt   = infixl_ 2
