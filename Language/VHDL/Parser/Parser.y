@@ -4267,6 +4267,10 @@ checkExp re =
 
 -- | Check that a RichExp is actually an aggregate
 checkAggregate :: RichExp -> P [ElemAssoc]
+checkAggregate re@AssocR{} = do
+    assoc <- checkElemAssoc re
+    return [assoc]
+
 checkAggregate (ParensR res _) =
     mapM checkElemAssoc res
 
