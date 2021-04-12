@@ -210,6 +210,8 @@ data Token = Teof
 
            | Tanti_type String
 
+           | Tanti_range String
+
            | Tanti_exp String
            | Tanti_exps String
 
@@ -420,6 +422,8 @@ instance Pretty Token where
     ppr (Tanti_lits e)      = pprAnti "lits" e
 
     ppr (Tanti_type e) = pprAnti "ty" e
+
+    ppr (Tanti_range e) = pprAnti "range" e
 
     ppr (Tanti_exp e)  = pprAnti "exp" e
     ppr (Tanti_exps e) = pprAnti "exps" e

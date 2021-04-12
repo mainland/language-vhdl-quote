@@ -79,6 +79,7 @@ instance Located DelayMechanism where
 instance Located DiscreteRange where
   locOf (SubtypeDR _ l) = locOf l
   locOf (RangeDR _ l) = locOf l
+  locOf (AntiRange _ l) = locOf l
 instance Located ElemAssoc where
   locOf (ElemAssoc _ _ l) = locOf l
   locOf (AntiExpsElemAssoc _ l) = locOf l

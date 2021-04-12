@@ -513,11 +513,13 @@ instance Pretty IndexConstraint where
 
 data DiscreteRange = SubtypeDR Subtype !SrcLoc
                    | RangeDR Range !SrcLoc
+                   | AntiRange String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty DiscreteRange where
     ppr (SubtypeDR subtype _) = ppr subtype
     ppr (RangeDR rng _)       = ppr rng
+    ppr (AntiRange rng _)     = pprAnti "range" rng
 
 type RecordTypeName = Name
 

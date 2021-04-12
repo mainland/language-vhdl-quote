@@ -29,6 +29,7 @@ module Language.VHDL.Quote (
     vdecl,
     videcl,
     vassocs,
+    vrange,
     vunit,
     vfile
   ) where
@@ -213,6 +214,9 @@ vexp = qq P.parseExp
 vassocs :: QuasiQuoter
 vassocs = qq P.parseAssocs
 
+vrange :: QuasiQuoter
+vrange = qq P.parseDiscreteRange
+
 vstm :: QuasiQuoter
 vstm = qq P.parseStm
 
@@ -351,6 +355,10 @@ qqElemAssocListE (V.AntiLitsElemAssoc v loc : inits) =
 qqElemAssocListE (ini : inis) =
     Just [|$(dataToExpQ qqExp ini) : $(dataToExpQ qqExp inis)|]
 
+qqRangeE :: V.DiscreteRange -> Maybe ExpQ
+qqRangeE (V.AntiRange rng _) = Just $ antiExpQ rng
+qqRangeE _                   = Nothing
+
 qqExp :: Typeable a => a -> Maybe ExpQ
 qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqLitE
@@ -368,6 +376,7 @@ qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqCStmsE
                       `extQ` qqSubtypeE
                       `extQ` qqElemAssocListE
+                      `extQ` qqRangeE
 
 antiPatQ :: String -> PatQ
 antiPatQ = either fail return . parsePat

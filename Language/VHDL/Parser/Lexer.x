@@ -114,6 +114,7 @@ vhdl :-
   "$cstm:"   / { allowAnti } { lexAnti Tanti_cstm }
   "$cstms:"  / { allowAnti } { lexAnti Tanti_cstms }
   "$ty:"     / { allowAnti } { lexAnti Tanti_type }
+  "$range:"  / { allowAnti } { lexAnti Tanti_range }
 }
 
 <0> {

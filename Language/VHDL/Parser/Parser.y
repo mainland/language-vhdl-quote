@@ -222,6 +222,7 @@ import Language.VHDL.Syntax hiding (L)
   ANTI_CSTM   { L _ T.Tanti_cstm{} }
   ANTI_CSTMS  { L _ T.Tanti_cstms{} }
   ANTI_TYPE   { L _ T.Tanti_type{} }
+  ANTI_RANGE  { L _ T.Tanti_range{} }
 
 %left DIRECTION
 %left '??'
@@ -254,6 +255,7 @@ import Language.VHDL.Syntax hiding (L)
 %name parseStm sequential_statement
 %name parseCStm concurrent_statement
 %name parseAssocs association_list
+%name parseDiscreteRange discrete_range
 
 %%
 {-
@@ -1044,6 +1046,7 @@ discrete_range :: { DiscreteRange }
 discrete_range :
     range              { RangeDR $1 (srclocOf $1) }
   | subtype_indication { SubtypeDR $1 (srclocOf $1) }
+  | ANTI_RANGE         { AntiRange (getANTI_RANGE $1) (srclocOf $1) }
 
 {-
 [§ 5.3.3]
@@ -4162,6 +4165,9 @@ getANTI_CSTMS (L _ (T.Tanti_cstms stms)) = stms
 
 getANTI_TYPE :: L T.Token -> String
 getANTI_TYPE (L _ (T.Tanti_type e)) = e
+
+getANTI_RANGE :: L T.Token -> String
+getANTI_RANGE (L _ (T.Tanti_range e)) = e
 
 unopE :: Unop -> Exp -> Exp
 unopE op e = UnopE op e (srclocOf e)
