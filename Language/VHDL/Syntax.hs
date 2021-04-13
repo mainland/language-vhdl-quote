@@ -1757,7 +1757,18 @@ instance Pretty Exp where
 
     pprPrec p (UnopE op e _) =
         parensIf (p > precOf op) $
-        ppr op <> pprPrec (precOf op) e
+        pprUnop (pprPrec (precOf op) e)
+      where
+        pprUnop :: Doc -> Doc
+        pprUnop doc
+          | needSpace op = ppr op <+> doc
+          | otherwise    = ppr op <> doc
+
+        needSpace :: Unop -> Bool
+        needSpace Cond = False
+        needSpace Plus = False
+        needSpace Neg  = False
+        needSpace _    = True
 
     -- nand and nor expressions must always be parenthesized
     pprPrec _ (BinopE op e1 e2 _s) | isNotLogicalOp op =
