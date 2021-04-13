@@ -340,7 +340,6 @@ qqCStmsE []                       = Just [|[]|]
 qqCStmsE (V.AntiCStms v _ : stms) = Just [|$(antiExpQ v) ++ $(dataToExpQ qqExp stms)|]
 qqCStmsE (stm : stms)             = Just [|$(dataToExpQ qqExp stm) : $(dataToExpQ qqExp stms)|]
 
-
 qqSubtypeE :: V.Subtype -> Maybe ExpQ
 qqSubtypeE (V.AntiType e loc) = Just [|toType $(antiExpQ e) $(qqLocE loc) :: V.Subtype|]
 qqSubtypeE _                  = Nothing
