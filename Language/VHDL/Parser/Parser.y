@@ -2194,10 +2194,8 @@ name :
         in
           AllN (SimpleN prefix n (srclocOf $1)) ($1 `srcspan` $2)
       }
-{-
-  | name '(' expression_rlist ')'
-      {% checkArrayIndexOrSlice $1 (rev $3) ($1 `srcspan` $4) }
--}
+  | 'array' name '(' expression_rlist ')'
+      {% checkArrayIndexOrSlice $2 (rev $4) ($1 `srcspan` $5) }
   | name signature_opt '\'' attribute_designator
       { AttrN $1 $2 $4 Nothing ($1 `srcspan` $4) }
 {-
