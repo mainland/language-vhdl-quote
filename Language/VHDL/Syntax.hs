@@ -2951,10 +2951,13 @@ data GenBody = GenBody [Decl] [CStm] !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty GenBody where
+    ppr (GenBody [] stms _) =
+      ppr stms
+
     ppr (GenBody decls stms _) =
-      nest 2 (text "generate" </> ppr decls) </>
+      indent 2 (ppr decls) </>
       nest 2 (text "begin" </> ppr stms) </>
-      text "end"
+      text "end" <> semi
 
 {-
 [§ 12.4]
