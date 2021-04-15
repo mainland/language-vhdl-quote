@@ -2620,7 +2620,6 @@ data CStm = LabelCS Label CStm !SrcLoc
 
 instance Pretty CStm where
     ppr (LabelCS lbl cstm _) =
-        nest 2 $
         ppr lbl <> colon <+/> ppr cstm
 
     ppr (BlockS cond gens ports decls stms _) =
