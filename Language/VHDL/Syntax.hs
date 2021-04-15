@@ -2692,7 +2692,7 @@ instance Pretty CStm where
         ppr inst <+> ppr gens <+> ppr ports
 
     ppr (ForGenS ident rng body _) =
-        nest 2 (text "for" <+> ppr ident <+> text "in" <+> ppr rng <+> text "generate" <+/> ppr body) </>
+        nest 2 (text "for" <+> ppr ident <+> text "in" <+> ppr rng <+> text "generate" </> ppr body) </>
         text "end generate"
 
     ppr (IfGenS alts maybe_alt _) =
@@ -2703,12 +2703,12 @@ instance Pretty CStm where
         pprIf :: (Cond, GenAlt) -> Doc
         pprIf (cond, GenAlt lbl body _) =
           nest 2 $
-          text "if" <+> pprLabel lbl <+> ppr cond <+> text "generate" <+/> ppr body
+          text "if" <+> pprLabel lbl <+> ppr cond <+> text "generate" </> ppr body
 
         pprElseIf :: (Cond, GenAlt) -> Doc
         pprElseIf (cond, GenAlt lbl body _) =
           nest 2 $
-          text "elsif" <+> pprLabel lbl <+> ppr cond <+> text "generate" <+/> ppr body
+          text "elsif" <+> pprLabel lbl <+> ppr cond <+> text "generate" </> ppr body
 
         pprElse :: Maybe GenAlt -> Doc
         pprElse Nothing =
@@ -2716,7 +2716,7 @@ instance Pretty CStm where
 
         pprElse (Just (GenAlt lbl body _)) =
             nest 2 $
-            text "else" <+> pprLabel lbl <+> text "generate" <+/> ppr body
+            text "else" <+> pprLabel lbl <+> text "generate" </> ppr body
 
         pprLabel :: Maybe Label -> Doc
         pprLabel Nothing    = empty
