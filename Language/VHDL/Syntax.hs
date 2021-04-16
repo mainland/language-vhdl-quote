@@ -1204,6 +1204,8 @@ port_map_aspect ::=
 -}
 
 data AssocElem = AssocElem (Maybe FormalPart) ActualPart !SrcLoc
+               | AntiAssocElem String !SrcLoc
+               | AntiAssocElems String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty AssocElem where
@@ -1213,6 +1215,12 @@ instance Pretty AssocElem where
         Just x  -> ppr x <+> text "=>"
       <+>
       ppr actual
+
+    ppr (AntiAssocElem assoc _) =
+        pprAnti "assoc" assoc
+
+    ppr (AntiAssocElems assocs _) =
+        pprAnti "assocs" assocs
 
     pprList elems =
       commasep (map ppr elems)

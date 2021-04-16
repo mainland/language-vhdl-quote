@@ -5,6 +5,8 @@ instance Located ActualDesignator where
   locOf (OpenA l) = locOf l
 instance Located AssocElem where
   locOf (AssocElem _ _ l) = locOf l
+  locOf (AntiAssocElem _ l) = locOf l
+  locOf (AntiAssocElems _ l) = locOf l
 instance Located (AssocPart a) where
   locOf (Part _ l) = locOf l
   locOf (FunPart _ _ l) = locOf l

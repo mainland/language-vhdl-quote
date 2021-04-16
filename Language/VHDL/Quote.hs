@@ -28,6 +28,7 @@ module Language.VHDL.Quote (
     vcstm,
     vdecl,
     videcl,
+    vassoc,
     vassocs,
     vrange,
     vunit,
@@ -234,6 +235,9 @@ vlit = qq P.parseLit
 vexp :: QuasiQuoter
 vexp = qq P.parseExp
 
+vassoc :: QuasiQuoter
+vassoc = qq P.parseAssoc
+
 vassocs :: QuasiQuoter
 vassocs = qq P.parseAssocs
 
@@ -327,6 +331,15 @@ qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
 
+qqAssocElemE :: V.AssocElem -> Maybe ExpQ
+qqAssocElemE (V.AntiAssocElem e loc) = Just [|$(antiExpQ e) $(qqLocE loc) :: V.AssocElem|]
+qqAssocElemE _                       = Nothing
+
+qqAssocElemsE :: [V.AssocElem] -> Maybe ExpQ
+qqAssocElemsE []                          = Just [|[]|]
+qqAssocElemsE (V.AntiAssocElems e _ : es) = Just [|$(antiExpQ e) ++ $(dataToExpQ qqExp es)|]
+qqAssocElemsE (e : es)                    = Just [|$(dataToExpQ qqExp e) : $(dataToExpQ qqExp es)|]
+
 qqDeclE :: V.Decl -> Maybe ExpQ
 qqDeclE (V.AntiDecl decl _) = Just $ antiExpQ decl
 qqDeclE _                   = Nothing
@@ -388,6 +401,8 @@ qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqNameE
                       `extQ` qqNamesE
                       `extQ` qqExpE
+                      `extQ` qqAssocElemE
+                      `extQ` qqAssocElemsE
                       `extQ` qqDeclE
                       `extQ` qqDeclsE
                       `extQ` qqIDeclE

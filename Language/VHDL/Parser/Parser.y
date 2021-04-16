@@ -209,6 +209,8 @@ import Language.VHDL.Syntax hiding (L)
   ANTI_NAMES  { L _ T.Tanti_names{} }
   ANTI_EXP    { L _ T.Tanti_exp{} }
   ANTI_EXPS   { L _ T.Tanti_exps{} }
+  ANTI_ASSOC  { L _ T.Tanti_assoc{} }
+  ANTI_ASSOCS { L _ T.Tanti_assocs{} }
   ANTI_INT    { L _ T.Tanti_int{} }
   ANTI_REAL   { L _ T.Tanti_real{} }
   ANTI_LIT    { L _ T.Tanti_lit{} }
@@ -254,6 +256,7 @@ import Language.VHDL.Syntax hiding (L)
 %name parseExp only_expression
 %name parseStm sequential_statement
 %name parseCStm concurrent_statement
+%name parseAssoc association
 %name parseAssocs association_list
 %name parseDiscreteRange discrete_range
 
@@ -1790,8 +1793,13 @@ port_map_aspect ::=
   port map ( port_association_list )
 -}
 
+association :: { AssocElem }
+association :
+  expression_rlist_elem {% checkArg $1 }
+
 association_list :: { [AssocElem] }
-association_list : expression_rlist {% mapM checkArg (rev $1) }
+association_list :
+  expression_rlist {% mapM checkArg (rev $1) }
 
 generic_map_aspect :: { GenericMapAspect }
 generic_map_aspect :
@@ -2615,6 +2623,10 @@ expression_rlist_elem :
       { AntiLitsR (getANTI_LITS $1) (srclocOf $1) }
   | ANTI_EXPS
       { AntiExpsR (getANTI_EXPS $1) (srclocOf $1) }
+  | ANTI_ASSOC
+      { AntiAssocElemR (getANTI_ASSOC $1) (srclocOf $1) }
+  | ANTI_ASSOCS
+      { AntiAssocElemsR (getANTI_ASSOCS $1) (srclocOf $1) }
 
 expression_rlist :: { RevList RichExp }
 expression_rlist :
@@ -4159,6 +4171,12 @@ getANTI_EXP (L _ (T.Tanti_exp e)) = e
 getANTI_EXPS :: L T.Token -> String
 getANTI_EXPS (L _ (T.Tanti_exps e)) = e
 
+getANTI_ASSOC :: L T.Token -> String
+getANTI_ASSOC (L _ (T.Tanti_assoc e)) = e
+
+getANTI_ASSOCS :: L T.Token -> String
+getANTI_ASSOCS (L _ (T.Tanti_assocs e)) = e
+
 getANTI_INT :: L T.Token -> String
 getANTI_INT (L _ (T.Tanti_int e)) = e
 
@@ -4233,39 +4251,45 @@ data RichExp = ExpR Exp
              | AssocR RichExp RichExp !SrcLoc
              | AntiLitsR String !SrcLoc
              | AntiExpsR String !SrcLoc
+             | AntiAssocElemR String !SrcLoc
+             | AntiAssocElemsR String !SrcLoc
   deriving (Eq, Ord, Show)
 
 instance Pretty RichExp where
-    pprPrec p (ExpR e)           = pprPrec p e
-    pprPrec _ (CallR f args _)   = ppr f <> parens (commasep (map ppr args))
-    pprPrec _ (CastR ty re _)    = ppr ty <> ppr re
-    pprPrec p (RangeR rng _)     = pprPrec p rng
-    pprPrec p (SubtypeR ty _)    = pprPrec p ty
-    pprPrec _ OpenR{}            = text "open"
-    pprPrec _ OthersR{}          = text "others"
-    pprPrec _ (ParensR res _)    = parens (commasep (map ppr res))
-    pprPrec _ (LabeledR l re _)  = ppr l <+> colon <+> ppr re
-    pprPrec _ (InertialR e _)    = text "inertial" <+> ppr e
-    pprPrec p (ChoicesR cs _)    = pprPrec p cs
-    pprPrec p (AssocR re1 re2 _) = ppr re1 <+> text "=>" <+> ppr re2
-    pprPrec _ (AntiLitsR s _)    = pprAnti "lits" s
-    pprPrec _ (AntiExpsR s _)    = pprAnti "exps" s
+    pprPrec p (ExpR e)              = pprPrec p e
+    pprPrec _ (CallR f args _)      = ppr f <> parens (commasep (map ppr args))
+    pprPrec _ (CastR ty re _)       = ppr ty <> ppr re
+    pprPrec p (RangeR rng _)        = pprPrec p rng
+    pprPrec p (SubtypeR ty _)       = pprPrec p ty
+    pprPrec _ OpenR{}               = text "open"
+    pprPrec _ OthersR{}             = text "others"
+    pprPrec _ (ParensR res _)       = parens (commasep (map ppr res))
+    pprPrec _ (LabeledR l re _)     = ppr l <+> colon <+> ppr re
+    pprPrec _ (InertialR e _)       = text "inertial" <+> ppr e
+    pprPrec p (ChoicesR cs _)       = pprPrec p cs
+    pprPrec p (AssocR re1 re2 _)    = ppr re1 <+> text "=>" <+> ppr re2
+    pprPrec _ (AntiLitsR s _)       = pprAnti "lits" s
+    pprPrec _ (AntiExpsR s _)       = pprAnti "exps" s
+    pprPrec _ (AntiAssocElemR s _)  = pprAnti "assoc" s
+    pprPrec _ (AntiAssocElemsR s _) = pprAnti "assocs" s
 
 instance Located RichExp where
-    locOf (ExpR e)         = locOf e
-    locOf (CallR _ _ l)    = locOf l
-    locOf (CastR _ _ l)    = locOf l
-    locOf (RangeR _ l)     = locOf l
-    locOf (SubtypeR _ l)   = locOf l
-    locOf (OpenR l)        = locOf l
-    locOf (OthersR l)      = locOf l
-    locOf (ParensR _ l)    = locOf l
-    locOf (LabeledR _ _ l) = locOf l
-    locOf (InertialR _ l)  = locOf l
-    locOf (ChoicesR _ l)   = locOf l
-    locOf (AssocR _ _ l)   = locOf l
-    locOf (AntiLitsR _ l)  = locOf l
-    locOf (AntiExpsR _ l)  = locOf l
+    locOf (ExpR e)              = locOf e
+    locOf (CallR _ _ l)         = locOf l
+    locOf (CastR _ _ l)         = locOf l
+    locOf (RangeR _ l)          = locOf l
+    locOf (SubtypeR _ l)        = locOf l
+    locOf (OpenR l)             = locOf l
+    locOf (OthersR l)           = locOf l
+    locOf (ParensR _ l)         = locOf l
+    locOf (LabeledR _ _ l)      = locOf l
+    locOf (InertialR _ l)       = locOf l
+    locOf (ChoicesR _ l)        = locOf l
+    locOf (AssocR _ _ l)        = locOf l
+    locOf (AntiLitsR _ l)       = locOf l
+    locOf (AntiExpsR _ l)       = locOf l
+    locOf (AntiAssocElemR _ l)  = locOf l
+    locOf (AntiAssocElemsR _ l) = locOf l
 
 checkIdentifier :: Name -> P Id
 checkIdentifier (SimpleN [] ident _) = pure ident
@@ -4351,6 +4375,12 @@ checkArg (AssocR re1 re2 l) = do
     f <- checkFormalPart re1
     a <- checkActualPart re2
     pure $ AssocElem (Just f) a l
+
+checkArg (AntiAssocElemR s l) =
+    pure $ AntiAssocElem s l
+
+checkArg (AntiAssocElemsR s l) =
+    pure $ AntiAssocElems s l
 
 checkArg re = do
     a <- checkActualPart re
