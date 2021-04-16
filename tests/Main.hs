@@ -64,8 +64,8 @@ expressionTests =
           show [vexp|x'length|] @?= show [vexp|$id:("x")'length|]
       it "declaration" $
         let d1 = [vdecl|entity ROM is
-                        port (Addr: in Word;
-                              Data: out Word;
+                        port (Addr: in Integer;
+                              Data: out Integer;
                               Sel: in Bit);
                         type Instruction is array (1 to 5) of Natural;
                         type Program is array (Natural range <>) of Instruction;
@@ -78,8 +78,8 @@ expressionTests =
                           ) ;
                         end ROM;|]
             d2 = [vdecl|entity ROM is
-                        port (Addr: in Word;
-                              Data: out Word;
+                        port (Addr: in Integer;
+                              Data: out Integer;
                               Sel: in Bit);
                         type Instruction is array ($one to 5) of Natural;
                         type Program is array (Natural range <>) of Instruction;

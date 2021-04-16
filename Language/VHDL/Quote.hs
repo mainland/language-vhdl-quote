@@ -189,12 +189,35 @@ qq = quasiquote defaultExtensions defaultTypes
 
     defaultTypes :: Set V.Id
     defaultTypes = Set.fromList
-      [ "Word"
-      , "Bit"
-      , "Natural"
+      [ -- Predefined types
+        "bit"
+      , "boolean"
+      , "character"
+      , "integer"
+      , "natural"
+      , "positive"
+      , "real"
+      , "string"
+      , "time"
+      , "bit_vector"
+      , "boolean_vector"
+      , "integer_vector"
+      , "real_vector"
+      , "time_vector"
+
+        -- Text types
+      , "text"
+      , "line"
+
+        -- IEEE types
+      , "signed"
+      , "unsigned"
       , "std_logic"
       , "std_logic_vector"
-      , "integer"
+      , "std_ulogic"
+      , "std_ulogic_vector"
+
+        -- IEEE types fixed point types
       , "sfixed"
       , "ufixed"
       ]
