@@ -1256,6 +1256,11 @@ declarations_rlist :
    {- empty -}                    { rnil }
  | declarations_rlist declaration { rcons $2 $1 }
 
+declarations1_rlist :: { RevList Decl }
+declarations1_rlist :
+   declaration                     { rsingleton $1 }
+ | declarations1_rlist declaration { rcons $2 $1 }
+
 {-
 [§ 6.2]
 type_declaration ::=
@@ -1857,11 +1862,22 @@ component_declaration ::=
 
 component_declaration :: { Decl }
 component_declaration :
-    'component' identifier is_opt
+    'component' identifier 'is'
         generic_clause_opt
         port_clause_opt
     'end' 'component' simple_name_opt ';'
       { ComponentD $2 $4 $5 $8 ($1 `srcspan` $9)}
+
+-- XXX replacing 'is' with is_opt causes a conflict with a
+-- component_instantiation_statement in the generate_statement_body rule, which
+-- can start with either declarations or consist just of concurrent statements.
+{-
+    'component' identifier 'is'
+        generic_clause_opt
+        port_clause_opt
+    'end' 'component' simple_name_opt ';'
+      { ComponentD $2 $4 $5 $8 ($1 `srcspan` $9)}
+-}
 
 is_opt :: { () }
 is_opt :
@@ -3441,6 +3457,16 @@ concurrent_statement_rlist :
   | concurrent_statement_rlist concurrent_statement
       { rcons $2 $1 }
 
+concurrent_statements1 :: { [CStm] }
+concurrent_statements1 : concurrent_statement1_rlist { rev $1 }
+
+concurrent_statement1_rlist :: { RevList CStm }
+concurrent_statement1_rlist :
+    concurrent_statement
+      { rsingleton $1 }
+  | concurrent_statement1_rlist concurrent_statement
+      { rcons $2 $1 }
+
 {-
 [§ 11.2]
 
@@ -3848,7 +3874,15 @@ alternative_label :
 
 generate_statement_body :: { GenBody }
 generate_statement_body :
-      declarations_rlist
+    {- empty -}
+      { GenBody [] [] noLoc }
+  | concurrent_statements1
+      { GenBody [] $1 (srclocOf $1) }
+  | 'begin'
+      concurrent_statements
+    'end' label_opt ';'
+      { GenBody [] $2 ($1 `srcspan` $5) }
+  | declarations1_rlist
     'begin'
       concurrent_statements
     'end' label_opt ';'
