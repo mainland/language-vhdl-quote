@@ -1253,7 +1253,7 @@ declaration :
 
 declarations_rlist :: { RevList Decl }
 declarations_rlist :
-    {- empty -}                   { rnil }
+   {- empty -}                    { rnil }
  | declarations_rlist declaration { rcons $2 $1 }
 
 {-
