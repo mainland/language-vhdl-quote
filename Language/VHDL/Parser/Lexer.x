@@ -321,7 +321,7 @@ isOperator = (`elem` operators)
 
 identifier :: Action P Token
 identifier beg end =
-    case Map.lookup ident keywords of
+    case Map.lookup ident_lower keywords of
       Nothing  -> do istype <- isTypeName (Id (mkNoCase ident) noLoc)
                      if istype
                        then token (Ttype_ident ident) beg end
@@ -330,6 +330,9 @@ identifier beg end =
   where
     ident :: Symbol
     ident = intern (inputString beg end)
+
+    ident_lower :: Symbol
+    ident_lower = intern (map toLower (inputString beg end))
 
 extidentifier :: Action P Token
 extidentifier beg end =
