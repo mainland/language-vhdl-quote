@@ -2513,7 +2513,6 @@ expression :
   | range
       { RangeR $1 (srclocOf $1) }
 
-
 expression_ :: { RichExp }
 expression_ :
     simple_expression              { $1 }
