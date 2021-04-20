@@ -19,7 +19,8 @@ import Data.Data (Data(..))
 import Data.Loc (Located(..),
                  SrcLoc,
                  noLoc,
-                 srclocOf)
+                 srclocOf,
+                 srcspan)
 #if !(MIN_VERSION_base(4,9,0))
 import Data.Monoid (Monoid(..), (<>))
 #endif /* !(MIN_VERSION_base(4,9,0)) */
@@ -3230,6 +3231,10 @@ infixop prec op l r =
 #if !defined(ONLY_TYPEDEFS)
 
 #include "Language/VHDL/Syntax-instances.hs"
+
+ifS :: Exp -> [Stm] -> [Stm] -> Stm
+ifS c t [IfS cs e lbl l] = IfS ((c, t) : cs) e lbl (c `srcspan` l)
+ifS c t e                = IfS [(c, t)] (Just e) Nothing (c `srcspan` e)
 
 mkId :: Symbol -> SrcLoc -> Id
 mkId s loc = Id (NoCase s ((intern . map toLower . unintern) s)) loc
