@@ -3103,7 +3103,7 @@ instance Pretty Id where
     ppr (Id sym _)       = ppr sym
     ppr (ExtId sym _)    = enclose (char '\\') (char '\\') $
                            text (unintern sym)
-    ppr (AntiId ident _) =  pprAnti "id" ident
+    ppr (AntiId ident _) = pprAnti "id" ident
 
     pprList [] =
         empty
