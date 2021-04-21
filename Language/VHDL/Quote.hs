@@ -127,6 +127,9 @@ instance ToLit Float where
 instance ToLit Double where
     toLit n loc = V.RealLit (show n) (toRational n) loc
 
+instance ToLit String where
+    toLit s loc = V.StringLit (show s) s loc
+
 -- | An instance of 'ToId' can be converted to a 'V.Id'.
 class ToId a where
     toId :: a -> SrcLoc -> V.Id
@@ -173,6 +176,9 @@ instance ToExp Float where
     toExp n loc = V.LitE (toLit n loc) loc
 
 instance ToExp Double where
+    toExp n loc = V.LitE (toLit n loc) loc
+
+instance ToExp String where
     toExp n loc = V.LitE (toLit n loc) loc
 
 -- | An instance of 'ToType' can be converted to a 'V.Subtype'.
