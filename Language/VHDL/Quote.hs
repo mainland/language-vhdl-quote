@@ -25,7 +25,9 @@ module Language.VHDL.Quote (
     vlit,
     vexp,
     vstm,
+    vstms,
     vcstm,
+    vcstms,
     vdecl,
     videcl,
     vassoc,
@@ -253,8 +255,14 @@ vrange = qq P.parseDiscreteRange
 vstm :: QuasiQuoter
 vstm = qq P.parseStm
 
+vstms :: QuasiQuoter
+vstms = qq P.parseStms
+
 vcstm :: QuasiQuoter
 vcstm = qq P.parseCStm
+
+vcstms :: QuasiQuoter
+vcstms = qq P.parseCStms
 
 vdecl :: QuasiQuoter
 vdecl = qq P.parseDecl

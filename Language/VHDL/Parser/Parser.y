@@ -255,7 +255,9 @@ import Language.VHDL.Syntax hiding (L)
 %name parseLit abstract_literal
 %name parseExp only_expression
 %name parseStm sequential_statement
+%name parseStms sequence_of_statements
 %name parseCStm concurrent_statement
+%name parseCStms concurrent_statements
 %name parseAssoc association
 %name parseAssocs association_list
 %name parseDiscreteRange discrete_range
