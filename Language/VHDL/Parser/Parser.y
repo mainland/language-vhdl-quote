@@ -4304,7 +4304,7 @@ checkExp (ExpR e) =
 
 -- function_call
 checkExp (CallR f args l) =
-    checkArray `catch` \(_ :: ParserException) -> checkFun
+    checkFun `catch` \(_ :: ParserException) -> checkArray
   where
     checkArray, checkFun :: P Exp
     checkArray = VarE <$> checkArrayIndexOrSlice f args l <*> pure l
