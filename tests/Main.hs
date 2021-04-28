@@ -27,6 +27,7 @@ spec = do
     expressionTests
     statementTests
     associationTests
+    patternTests
 
 decimalLiteralTests :: Spec
 decimalLiteralTests =
@@ -58,10 +59,8 @@ expressionTests =
     describe "Expression antiquote tests" $ do
       it "addition expression" $ [vexp|1 + 2|] @?= [vexp|$one + 2|]
       it "and expression" $ [vexp|and 1|] @?= [vexp|and $one|]
-      -- XXX It looks like different quasiquote invocations get fresh instances
-      -- of the symbol table so we have to compare using show
       it "attribute name" $
-          show [vexp|x'length|] @?= show [vexp|$id:("x")'length|]
+        [vexp|x'length|] @?= [vexp|$id:("x")'length|]
       it "declaration" $
         let d1 = [vdecl|entity ROM is
                         port (Addr: in Integer;
@@ -149,6 +148,15 @@ associationTests =
     one :: Exp
     one = [vexp|1|]
 
+patternTests :: Spec
+patternTests =
+    describe "Pattern antiquote tests" $ do
+      it "match on symbol" $
+        isx [vexp|$id:("x")|] @?= True
+  where
+    isx :: Exp -> Bool
+    isx [vexp|x|] = True
+    isx _         = False
 
 isIntLit :: Lit -> Integer -> Assertion
 isIntLit (IntLit _ i _) i' = i @?= i'
