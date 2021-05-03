@@ -2249,7 +2249,7 @@ instance Pretty Stm where
             ppr t <+> text ":=" <+> ppr sel_es
 
     ppr (CallS f params _) =
-        ppr f <+> parens (commasep (map ppr params))
+        ppr f <> parens (commasep (map ppr params))
 
     ppr (IfS bs maybe_else _ _) =
        stack (pprIf (head bs) : map pprElseIf (tail bs)) </>
@@ -2654,7 +2654,7 @@ instance Pretty CStm where
                   | otherwise = empty
 
     ppr (ConcCallS isPostponed f params _) =
-        postponed <+> ppr f <+> parens (commasep (map ppr params))
+        postponed <+> ppr f <> parens (commasep (map ppr params))
       where
         postponed :: Doc
         postponed | isPostponed = text "postponed"
