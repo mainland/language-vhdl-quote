@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -2468,10 +2469,12 @@ conditional_expressions ::=
 data Conditional a = NilC
                    | FinC a !SrcLoc
                    | GuardC a Exp (Conditional a) !SrcLoc
-  deriving (Eq, Ord, Show, Data, Typeable)
+                   | AntiCond String !SrcLoc
+  deriving (Eq, Ord, Show, Data, Typeable, Functor)
 
 instance Pretty a => Pretty (Conditional a) where
-    ppr (FinC x _) = ppr x
+    ppr (FinC x _)     = ppr x
+    ppr (AntiCond c _) = pprAnti "cond" c
 
     ppr cond = elsesep (pprCond cond)
       where
@@ -2479,6 +2482,7 @@ instance Pretty a => Pretty (Conditional a) where
         pprCond NilC                = []
         pprCond (FinC x _)          = [ppr x]
         pprCond (GuardC x e rest _) = pprGuarded x e : pprCond rest
+        pprCond (AntiCond c _)      = [pprAnti "cond" c]
 
 {-
 [§ 10.5.4]

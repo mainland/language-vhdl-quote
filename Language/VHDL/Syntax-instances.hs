@@ -36,6 +36,7 @@ instance Located (Conditional a) where
   locOf NilC = NoLoc
   locOf (FinC _ l) = locOf l
   locOf (GuardC _ _ _ l) = locOf l
+  locOf (AntiCond _ l) = locOf l
 instance Located Constraint where
   locOf (RangeC _ l) = locOf l
   locOf (ArrayC _ _ l) = locOf l

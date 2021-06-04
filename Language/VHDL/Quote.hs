@@ -24,6 +24,8 @@ module Language.VHDL.Quote (
     vname,
     vlit,
     vexp,
+    vcondexp,
+    vcondwave,
     vstm,
     vstms,
     vcstm,
@@ -244,6 +246,12 @@ vlit = qq P.parseLit
 vexp :: QuasiQuoter
 vexp = qq P.parseExp
 
+vcondexp :: QuasiQuoter
+vcondexp = qq P.parseCondExp
+
+vcondwave :: QuasiQuoter
+vcondwave = qq P.parseCondWave
+
 vassoc :: QuasiQuoter
 vassoc = qq P.parseAssoc
 
@@ -349,6 +357,14 @@ qqExpE :: V.Exp -> Maybe ExpQ
 qqExpE (V.AntiExp e loc)    = Just [|toExp $(antiExpQ e) $(qqLocE loc) :: V.Exp|]
 qqExpE _                    = Nothing
 
+qqCondE :: V.Conditional V.Exp -> Maybe ExpQ
+qqCondE (V.AntiCond e _) = Just [|$(antiExpQ e) :: V.Conditional V.Exp|]
+qqCondE _                = Nothing
+
+qqCondWaveE :: V.Conditional V.Waveform -> Maybe ExpQ
+qqCondWaveE (V.AntiCond e _) = Just [|$(antiExpQ e) :: V.Conditional V.Waveform|]
+qqCondWaveE _                = Nothing
+
 qqAssocElemE :: V.AssocElem -> Maybe ExpQ
 qqAssocElemE (V.AntiAssocElem e loc) = Just [|$(antiExpQ e) $(qqLocE loc) :: V.AssocElem|]
 qqAssocElemE _                       = Nothing
@@ -420,6 +436,8 @@ qqExp = const Nothing `extQ` qqStringE
                       `extQ` qqNameE
                       `extQ` qqNamesE
                       `extQ` qqExpE
+                      `extQ` qqCondE
+                      `extQ` qqCondWaveE
                       `extQ` qqAssocElemE
                       `extQ` qqAssocElemsE
                       `extQ` qqDeclE

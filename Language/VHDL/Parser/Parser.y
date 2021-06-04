@@ -209,6 +209,7 @@ import Language.VHDL.Syntax hiding (L)
   ANTI_NAMES  { L _ T.Tanti_names{} }
   ANTI_EXP    { L _ T.Tanti_exp{} }
   ANTI_EXPS   { L _ T.Tanti_exps{} }
+  ANTI_COND   { L _ T.Tanti_cond{} }
   ANTI_ASSOC  { L _ T.Tanti_assoc{} }
   ANTI_ASSOCS { L _ T.Tanti_assocs{} }
   ANTI_INT    { L _ T.Tanti_int{} }
@@ -261,6 +262,8 @@ import Language.VHDL.Syntax hiding (L)
 %name parseAssoc association
 %name parseAssocs association_list
 %name parseDiscreteRange discrete_range
+%name parseCondWave conditional_waveforms
+%name parseCondExp conditional_expressions
 
 %%
 {-
@@ -3080,6 +3083,8 @@ conditional_waveforms :
       { GuardC $1 $3 (FinC $5 (srclocOf $5)) ($1 `srcspan` $5) }
   | waveform 'when' condition 'else' conditional_waveforms
       { GuardC $1 $3 $5 ($1 `srcspan` $5) }
+  | ANTI_COND
+      { AntiCond (getANTI_COND $1) (srclocOf $1) }
 
 conditional_force_assignment :: { Stm }
 conditional_force_assignment :
@@ -3104,6 +3109,8 @@ conditional_expressions :
             ; pure $ GuardC e $3 $5 ($1 `srcspan` $5)
             }
       }
+  | ANTI_COND
+      { AntiCond (getANTI_COND $1) (srclocOf $1) }
 
 {-
 [§ 10.5.4]
@@ -4167,6 +4174,9 @@ getANTI_EXP (L _ (T.Tanti_exp e)) = e
 
 getANTI_EXPS :: L T.Token -> String
 getANTI_EXPS (L _ (T.Tanti_exps e)) = e
+
+getANTI_COND :: L T.Token -> String
+getANTI_COND (L _ (T.Tanti_cond e)) = e
 
 getANTI_ASSOC :: L T.Token -> String
 getANTI_ASSOC (L _ (T.Tanti_assoc e)) = e

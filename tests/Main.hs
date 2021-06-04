@@ -129,6 +129,12 @@ statementTests =
               begin
                 $cstms:cstms
               end;|]
+      it "Conditional expression" $
+        let cond = [vcondexp|'1' when '1' else '0'|]
+        in
+          [vstm|x := '1' when '1' else '0';|]
+          @?=
+          [vstm|x := $cond:cond;|]
   where
     zero :: Exp
     zero = [vexp|0|]

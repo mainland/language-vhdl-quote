@@ -215,6 +215,8 @@ data Token = Teof
            | Tanti_exp String
            | Tanti_exps String
 
+           | Tanti_cond String
+
            | Tanti_assoc String
            | Tanti_assocs String
 
@@ -430,6 +432,8 @@ instance Pretty Token where
 
     ppr (Tanti_exp e)  = pprAnti "exp" e
     ppr (Tanti_exps e) = pprAnti "exps" e
+
+    ppr (Tanti_cond e)  = pprAnti "cond" e
 
     ppr (Tanti_assoc e)  = pprAnti "exp" e
     ppr (Tanti_assocs e) = pprAnti "exps" e
