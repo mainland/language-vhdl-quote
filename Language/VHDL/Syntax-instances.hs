@@ -33,7 +33,9 @@ instance Located Choice where
   locOf (ElemC _ l) = locOf l
   locOf (OthersC l) = locOf l
 instance Located (Conditional a) where
-  locOf (Conditional _ _ l) = locOf l
+  locOf NilC = NoLoc
+  locOf (FinC _ l) = locOf l
+  locOf (GuardC _ _ _ l) = locOf l
 instance Located Constraint where
   locOf (RangeC _ l) = locOf l
   locOf (ArrayC _ _ l) = locOf l

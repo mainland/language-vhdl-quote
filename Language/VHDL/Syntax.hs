@@ -16,7 +16,8 @@ module Language.VHDL.Syntax where
 
 import Data.Char (toLower)
 import Data.Data (Data(..))
-import Data.Loc (Located(..),
+import Data.Loc (Loc(NoLoc),
+                 Located(..),
                  SrcLoc,
                  noLoc,
                  srclocOf,
@@ -2464,18 +2465,20 @@ conditional_expressions ::=
   [ else expression ]
 -}
 
-data Conditional a = Conditional [(a, Exp)] (Maybe a) !SrcLoc
+data Conditional a = NilC
+                   | FinC a !SrcLoc
+                   | GuardC a Exp (Conditional a) !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty a => Pretty (Conditional a) where
-    ppr (Conditional [] (Just x) _) =
-        ppr x
+    ppr (FinC x _) = ppr x
 
-    ppr (Conditional clauses Nothing _) =
-        elsesep [pprGuarded a e | (a, e) <- clauses]
-
-    ppr (Conditional clauses (Just fin) _) =
-        elsesep ([pprGuarded a e | (a, e) <- clauses] ++ [ppr fin])
+    ppr cond = elsesep (pprCond cond)
+      where
+        pprCond :: Pretty a => Conditional a -> [Doc]
+        pprCond NilC                = []
+        pprCond (FinC x _)          = [ppr x]
+        pprCond (GuardC x e rest _) = pprGuarded x e : pprCond rest
 
 {-
 [§ 10.5.4]
