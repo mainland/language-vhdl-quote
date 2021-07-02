@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Language.VHDL.Parser.Tokens
--- Copyright   : (c) 2016-2020 Drexel University
+-- Copyright   : (c) 2016-2021 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -23,6 +23,7 @@ import Text.PrettyPrint.Mainland.Class
 
 data Token = Teof
 
+           | TboolLit Bool
            | TintLit (String, Integer)
            | TrealLit (String, Rational)
            | TcharLit (String, Char)
@@ -242,6 +243,8 @@ pprSym = quote . text . unintern
 instance Pretty Token where
     ppr Teof = text "end of file"
 
+    ppr (TboolLit True)     = text "true"
+    ppr (TboolLit False)    = text "false"
     ppr (TintLit (s, _))    = text s
     ppr (TrealLit (s, _))   = text s
     ppr (TcharLit (s, _))   = text s

@@ -7,7 +7,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module      : Language.VHDL.Parser.Lexer
--- Copyright   : (c) 2014-2016 Drexel University
+-- Copyright   : (c) 2014-2021 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -128,6 +128,9 @@ vhdl :-
   @multicomment ;
 
   $space+ ;
+
+  "true"  { token (TboolLit True) }
+  "false" { token (TboolLit False) }
 
   $letter ("_"? $letter_or_digit)* { identifier }
   "\\" ($graphic | "\\\\")+ "\\"   { extidentifier }

@@ -7,7 +7,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module      : Language.VHDL.Quote
--- Copyright   : (c) 2016-2020 Drexel University
+-- Copyright   : (c) 2016-2021 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -117,6 +117,9 @@ class ToLit a where
 instance ToLit V.Lit where
     toLit l _ = l
 
+instance ToLit Bool where
+    toLit x l = V.BoolLit x l
+
 instance ToLit Integer where
     toLit n loc = V.IntLit (show n) n loc
 
@@ -167,6 +170,9 @@ instance ToExp V.Id where
 
 instance ToExp V.Exp where
     toExp e _ = e
+
+instance ToExp Bool where
+    toExp n loc = V.LitE (toLit n loc) loc
 
 instance ToExp Integer where
     toExp n loc = V.LitE (toLit n loc) loc

@@ -7,7 +7,7 @@
 
 -- |
 -- Module      : Language.VHDL.Parser.Parser
--- Copyright   : (c) 2014-2016 Drexel University
+-- Copyright   : (c) 2014-2021 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -45,6 +45,7 @@ import Language.VHDL.Syntax hiding (L)
   ID          { L _ T.Tident{} }
   EXTID       { L _ T.Text_ident{} }
   TYID        { L _ T.Ttype_ident{} }
+  BOOL        { L _ T.TboolLit{} }
   INT         { L _ T.TintLit{} }
   REAL        { L _ T.TrealLit{} }
   CHAR        { L _ T.TcharLit{} }
@@ -4074,7 +4075,11 @@ extended_digit ::= digit | letter
 
 abstract_literal :: { Lit }
 abstract_literal :
-    INT  { let (s, i) = getINT $1
+    BOOL { let b = getBOOL $1
+           in
+             BoolLit b (srclocOf $1)
+         }
+  | INT  { let (s, i) = getINT $1
            in
              IntLit s i (srclocOf $1)
          }
@@ -4141,6 +4146,9 @@ getEXTID (L _ (T.Text_ident ident)) = ident
 
 getTYID :: L T.Token -> Symbol
 getTYID (L _ (T.Ttype_ident ident)) = ident
+
+getBOOL :: L T.Token -> Bool
+getBOOL (L _ (T.TboolLit x)) = x
 
 getINT :: L T.Token -> (String, Integer)
 getINT (L _ (T.TintLit x)) = x

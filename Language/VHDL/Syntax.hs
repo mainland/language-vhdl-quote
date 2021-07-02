@@ -8,7 +8,7 @@
 
 -- |
 -- Module      : Language.VHDL.Syntax
--- Copyright   : (c) 2016-2020 Drexel University
+-- Copyright   : (c) 2016-2021 Drexel University
 -- License     : BSD-style
 -- Author      : Geoffrey Mainland <mainland@drexel.edu>
 -- Maintainer  : Geoffrey Mainland <mainland@drexel.edu>
@@ -2026,7 +2026,8 @@ numeric_literal ::=
   | physical_literal
 -}
 
-data Lit = IntLit       String Integer   !SrcLoc
+data Lit = BoolLit      Bool             !SrcLoc
+         | IntLit       String Integer   !SrcLoc
          | RealLit      String Rational  !SrcLoc
          | IdLit        Id               !SrcLoc
          | CharLit      String Char      !SrcLoc
@@ -2040,6 +2041,8 @@ data Lit = IntLit       String Integer   !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
 
 instance Pretty Lit where
+    ppr (BoolLit True _)   = text "true"
+    ppr (BoolLit False _)  = text "false"
     ppr (IntLit s _ _)     = text s
     ppr (RealLit s _ _)    = text s
     ppr (IdLit ident _)    = ppr ident

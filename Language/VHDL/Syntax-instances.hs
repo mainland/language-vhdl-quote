@@ -146,6 +146,7 @@ instance Located InterfaceSubprogramDefault where
   locOf (SubprogramD _ l) = locOf l
   locOf (AllD l) = locOf l
 instance Located Lit where
+  locOf (BoolLit _ l) = locOf l
   locOf (IntLit _ _ l) = locOf l
   locOf (RealLit _ _ l) = locOf l
   locOf (IdLit _ l) = locOf l

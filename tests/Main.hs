@@ -3,7 +3,7 @@
 
 -- |
 -- Module      :  Main
--- Copyright   :  (c) 2016-2020 Drexel University
+-- Copyright   :  (c) 2016-2021 Drexel University
 -- License     :  BSD-style
 -- Maintainer  :  mainland@drexel.edu
 
@@ -11,6 +11,7 @@ module Main (
     main
   ) where
 
+import Data.Loc ( noLoc )
 import Test.HUnit (Assertion, (@?=))
 import Test.Hspec
 
@@ -22,12 +23,20 @@ main = hspec spec
 
 spec :: Spec
 spec = do
+    boolLiteralTests
     decimalLiteralTests
     basedLiteralTests
     expressionTests
     statementTests
     associationTests
     patternTests
+
+boolLiteralTests :: Spec
+boolLiteralTests =
+    describe "Boolean literal tests" $ do
+      it "True toExp" $ [vexp|true|] @?= toExp True noLoc
+      it "True antiquote" $ [vexp|true|] @?= [vexp|$(True)|]
+      it "False antiquote" $ [vexp|false|] @?= [vexp|$(False)|]
 
 decimalLiteralTests :: Spec
 decimalLiteralTests =
