@@ -60,6 +60,7 @@ import Language.VHDL.Syntax hiding (L)
   'all'           { L _ T.Tall }
   'and'           { L _ T.Tand }
   'array'         { L _ T.Tarray }
+  'arrname'       { L _ T.Tarrname }
   'architecture'  { L _ T.Tarchitecture }
   'assert'        { L _ T.Tassert }
   'attribute'     { L _ T.Tattribute }
@@ -85,6 +86,7 @@ import Language.VHDL.Syntax hiding (L)
   'for'           { L _ T.Tfor }
   'force'         { L _ T.Tforce }
   'function'      { L _ T.Tfunction }
+  'funname'       { L _ T.Tfunname }
   'generate'      { L _ T.Tgenerate }
   'generic'       { L _ T.Tgeneric }
   'group'         { L _ T.Tgroup }
@@ -2224,8 +2226,13 @@ name :
         in
           AllN (SimpleN prefix n (srclocOf $1)) ($1 `srcspan` $2)
       }
-  | 'array' name '(' expression_rlist ')'
+  | 'arrname' name '(' expression_rlist ')'
       {% checkArrayIndexOrSlice $2 (rev $4) ($1 `srcspan` $5) }
+  | 'funname' name '(' expression_rlist ')'
+      {% do { es <- mapM checkExp (rev $4)
+            ; return $ CallN $2 es ($1 `srcspan` $5)
+            }
+      }
   | name signature_opt '\'' attribute_designator
       { AttrN $1 $2 $4 Nothing ($1 `srcspan` $4) }
 {-

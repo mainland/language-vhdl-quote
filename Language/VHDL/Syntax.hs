@@ -1579,13 +1579,14 @@ data Name = SimpleN [Id] Id !SrcLoc
           | OpN [Id] Operator !SrcLoc
           | EnumN [Id] String !SrcLoc
           | SelN Name Id !SrcLoc
-          | AllN Name !SrcLoc
           | IndexedN Name [Exp] !SrcLoc
           | SliceN Name DiscreteRange !SrcLoc
           | AttrN Name (Maybe Sig) AttrDesignator (Maybe Exp) !SrcLoc
           | ExtConstN ExtPath Subtype !SrcLoc
           | ExtSigN ExtPath Subtype !SrcLoc
           | ExtVarN ExtPath Subtype !SrcLoc
+          | CallN Name [Exp] !SrcLoc
+          | AllN Name !SrcLoc
           | AntiName String !SrcLoc
           | AntiNames String !SrcLoc
   deriving (Eq, Ord, Show, Data, Typeable)
@@ -1605,9 +1606,6 @@ instance Pretty Name where
 
     ppr (SelN n ele _) =
         ppr n <> text "." <> ppr ele
-
-    ppr (AllN n _) =
-        ppr n <> text "." <> text "all"
 
     ppr (IndexedN n es _) =
         ppr n <> parens (commasep (map ppr es))
@@ -1633,6 +1631,12 @@ instance Pretty Name where
         text "<<" <> text "variable" <+>
         ppr path <+> colon <+> ppr subty <>
         text ">>"
+
+    ppr (CallN n es _) =
+        ppr n <> parens (commasep (map ppr es))
+
+    ppr (AllN n _) =
+        ppr n <> text "." <> text "all"
 
     ppr (AntiName e _) =
         pprAnti "name" e

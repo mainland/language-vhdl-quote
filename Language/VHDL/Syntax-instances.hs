@@ -163,13 +163,14 @@ instance Located Name where
   locOf (OpN _ _ l) = locOf l
   locOf (EnumN _ _ l) = locOf l
   locOf (SelN _ _ l) = locOf l
-  locOf (AllN _ l) = locOf l
   locOf (IndexedN _ _ l) = locOf l
   locOf (SliceN _ _ l) = locOf l
   locOf (AttrN _ _ _ _ l) = locOf l
   locOf (ExtConstN _ _ l) = locOf l
   locOf (ExtSigN _ _ l) = locOf l
   locOf (ExtVarN _ _ l) = locOf l
+  locOf (CallN _ _ l) = locOf l
+  locOf (AllN _ l) = locOf l
   locOf (AntiName _ l) = locOf l
   locOf (AntiNames _ l) = locOf l
 instance Located (NameList a) where

@@ -44,6 +44,7 @@ data Token = Teof
            | Tand
            | Tarchitecture
            | Tarray
+           | Tarrname
            | Tassert
            | Tassume
            | Tassume_guarantee
@@ -72,6 +73,7 @@ data Token = Teof
            | Tfor
            | Tforce
            | Tfunction
+           | Tfunname
            | Tgenerate
            | Tgeneric
            | Tgroup
@@ -264,6 +266,7 @@ instance Pretty Token where
     ppr Tand                = text "and"
     ppr Tarchitecture       = text "architecture"
     ppr Tarray              = text "array"
+    ppr Tarrname            = text "arrname"
     ppr Tassert             = text "assert"
     ppr Tassume             = text "assume"
     ppr Tassume_guarantee   = text "assums_guarantee"
@@ -292,6 +295,7 @@ instance Pretty Token where
     ppr Tfor                = text "for"
     ppr Tforce              = text "force"
     ppr Tfunction           = text "function"
+    ppr Tfunname            = text "funname"
     ppr Tgenerate           = text "generate"
     ppr Tgeneric            = text "generic"
     ppr Tgroup              = text "group"
