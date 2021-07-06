@@ -16,6 +16,7 @@
 
 module Language.VHDL.Quote (
     ToLit(..),
+    bitsL,
     ToId(..),
     ToName(..),
     ToExp(..),
@@ -40,6 +41,7 @@ module Language.VHDL.Quote (
   ) where
 
 import Control.Monad ((>=>))
+import Data.Bits
 import Data.Data (Data(..))
 import Data.Generics (extQ)
 import Data.Loc
@@ -113,6 +115,16 @@ parseHsPat = parseResultToEither . parsePatWithMode parseMode
 -- | An instance of 'ToLit' can be converted to a 'V.Lit'.
 class ToLit a where
     toLit :: a -> SrcLoc -> V.Lit
+
+-- | Compute the VHDL bit string literal representation of a value that is a
+-- member of @FiniteBits@
+bitsL :: FiniteBits a => a -> SrcLoc -> V.Lit
+bitsL x l = V.BitStringLit (quote bs) l
+  where
+    bs = [if testBit x i then '1' else '0' | i <- [n-1, n-2..0]]
+    n = finiteBitSize x
+
+    quote s = '\"' : s ++ "\""
 
 instance ToLit V.Lit where
     toLit l _ = l
