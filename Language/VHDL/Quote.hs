@@ -171,6 +171,9 @@ instance ToExp V.Id where
 instance ToExp V.Name where
     toExp n l = V.VarE n l
 
+instance ToExp V.Lit where
+    toExp lit l = V.LitE lit l
+
 instance ToExp V.Exp where
     toExp e _ = e
 
