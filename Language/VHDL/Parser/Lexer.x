@@ -45,7 +45,7 @@ import Data.Maybe (catMaybes)
 import Data.Ratio ((%))
 import Data.Set (Set)
 import qualified Data.Set as Set
-import Data.Symbol
+import qualified Data.Symbol as Symbol
 import qualified Data.Text.Lazy as T
 import qualified Text.ParserCombinators.ReadP as ReadP
 import Text.ParserCombinators.ReadP hiding (get)
@@ -190,10 +190,10 @@ vhdl :-
 }
 
 {
-keywords :: Map Symbol Token
+keywords :: Map Symbol.Symbol Token
 keywords = Map.fromList kws
   where
-    kws :: [(Symbol, Token)]
+    kws :: [(Symbol.Symbol, Token)]
     kws = [ ("abs", Tabs)
           , ("access", Taccess)
           , ("after", Tafter)
@@ -336,18 +336,18 @@ identifier beg end =
                        else token (Tident ident) beg end
       Just tok -> token tok beg end
   where
-    ident :: Symbol
-    ident = intern (inputString beg end)
+    ident :: Symbol.Symbol
+    ident = Symbol.intern (inputString beg end)
 
-    ident_lower :: Symbol
-    ident_lower = intern (map toLower (inputString beg end))
+    ident_lower :: Symbol.Symbol
+    ident_lower = Symbol.intern (map toLower (inputString beg end))
 
 extidentifier :: Action P Token
 extidentifier beg end =
     token (Text_ident ident) beg end
   where
-    ident :: Symbol
-    ident = intern (inputString beg end)
+    ident :: Symbol.Symbol
+    ident = Symbol.intern (inputString beg end)
 
 lexLit :: Show a => ReadP a -> ((String, a) -> Token) -> Action P Token
 lexLit p tok beg end = do
