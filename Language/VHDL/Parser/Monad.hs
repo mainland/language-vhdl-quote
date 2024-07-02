@@ -179,11 +179,15 @@ popLexState :: P Int
 popLexState = do
     ls <- getLexState
     modify $ \s ->
-        s { lexState = tail (lexState s) }
+        s { lexState = drop 1 (lexState s) }
     return ls
 
 getLexState :: P Int
-getLexState = gets (head . lexState)
+getLexState = do
+    s <- gets lexState
+    case s of
+        []  -> fail "Empty lex state"
+        i:_ -> return i
 
 getPrevToken :: P (Maybe (L Token))
 getPrevToken = gets prevToken
