@@ -89,9 +89,9 @@ alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
 alexGetByte inp@AlexInput{ alexBytes = [] } =
     case alexGetChar inp of
       Nothing        -> Nothing
-      Just (c, inp') -> Just (b, inp' { alexBytes = bs })
-                          where
-                            b : bs = utf8Encode c
+      Just (c, inp') -> case utf8Encode c of
+                          []   -> fail "can't happen"
+                          b:bs -> Just (b, inp' { alexBytes = bs })
   where
     utf8Encode :: Char -> [Word8]
     utf8Encode = map fromIntegral . go . ord
