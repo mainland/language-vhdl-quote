@@ -11,8 +11,18 @@ homepage:      https://github.com/mainland/language-vhdl-quote
 bug-reports:   https://github.com/mainland/language-vhdl-quote/issues
 category:      Language
 synopsis:      VHDL quasiquoting library.
-tested-with:   GHC==8.0.2, GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4,
-               GHC==8.10.4, GHC==9.0.1
+tested-with:   GHC==8.0.2,
+               GHC==8.2.2,
+               GHC==8.4.3,
+               GHC==8.6.5,
+               GHC==8.8.4,
+               GHC==8.10.7,
+               GHC==9.0.2,
+               GHC==9.2.2,
+               GHC==9.4.8,
+               GHC==9.6.4,
+               GHC==9.8.2,
+               GHC==9.10.1
 
 description:
   This package provides a general parser and quasiquoter for the VHDL language.
