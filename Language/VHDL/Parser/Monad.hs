@@ -116,20 +116,23 @@ emptyPState exts typens buf pos = PState
 newtype P a = P { runP :: PState -> Either SomeException (a, PState) }
 
 instance Functor P where
-    fmap f x = x >>= return . f
+    fmap f mx = P $ \s -> case runP mx s of
+                            Left e         -> Left e
+                            Right (x, s')  -> Right (f x, s')
 
 instance Applicative P where
-    pure a = P $ \s -> Right (a, s)
+    pure x = P $ \s -> Right (x, s)
 
-    (<*>) = ap
+    mf <*> mx = P $ \s -> case runP mf s of
+                            Left e         -> Left e
+                            Right (f, s')  -> runP (fmap f mx) s'
 
 instance Monad P where
-    return = pure
+    m >>= k = P $ \s -> case runP m s of
+                          Left e         -> Left e
+                          Right (a, s')  -> runP (k a) s'
 
-    m >>= k = P $ \s ->
-        case runP m s of
-          Left e         -> Left e
-          Right (a, s')  -> runP (k a) s'
+    return = pure
 
 #if MIN_VERSION_base(4,13,0)
 instance MonadFail P where
