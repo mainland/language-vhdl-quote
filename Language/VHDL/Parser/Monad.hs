@@ -67,7 +67,9 @@ import Data.Bits ((.&.),
                   bit,
                   setBit)
 import Data.Int (Int64)
+#if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
+#endif /* !MIN_VERSION_base(4,20,0) */
 import Data.Loc
 #if !(MIN_VERSION_base(4,9,0))
 import Data.Monoid (Monoid(..), (<>))
