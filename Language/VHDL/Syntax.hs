@@ -2260,8 +2260,11 @@ instance Pretty Stm where
     ppr (CallS f params _) =
         ppr f <> parens (commasep (map ppr params))
 
-    ppr (IfS bs maybe_else _ _) =
-       stack (pprIf (head bs) : map pprElseIf (tail bs)) </>
+    ppr (IfS [] _ _ _) =
+        error "IfS: can't happen"
+
+    ppr (IfS (b:bs) maybe_else _ _) =
+       stack (pprIf b : map pprElseIf bs) </>
        pprElse maybe_else </>
        text "end if"
       where
@@ -2718,8 +2721,11 @@ instance Pretty CStm where
         nest 2 (text "for" <+> ppr ident <+> text "in" <+> ppr rng <+> text "generate" </> ppr body) </>
         text "end generate"
 
-    ppr (IfGenS alts maybe_alt _) =
-       stack (pprIf (head alts) : map pprElseIf (tail alts)) </>
+    ppr (IfGenS [] _ _) =
+        error "IfGenS: can't happen"
+
+    ppr (IfGenS (alt:alts) maybe_alt _) =
+       stack (pprIf alt : map pprElseIf alts) </>
        pprElse maybe_alt </>
        text "end generate"
       where
