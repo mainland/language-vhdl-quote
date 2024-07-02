@@ -14,7 +14,7 @@ module Language.VHDL.Parser.Alex (
     alexBuf,
     alexPos,
     alexOff,
-    
+
     alexLoc,
 
     alexGetChar,
